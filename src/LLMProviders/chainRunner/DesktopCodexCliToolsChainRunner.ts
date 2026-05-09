@@ -37,11 +37,26 @@ export type LocalCodexComposerExecutor = (
   args: Record<string, string>
 ) => Promise<unknown>;
 
-const LOCAL_CODEX_SYSTEM_INSTRUCTIONS = `You are running in Desktop Codex Local Tools mode.
-Use only the pre-executed local tool results included in the user message.
+export const LOCAL_CODEX_SYSTEM_INSTRUCTIONS = `# Desktop Codex Local Tools Mode
+
+You are running in a local tools mode where Obsidian Copilot pre-executes local tools only when the user explicitly includes @vault, @websearch, @web, @composer, or @memory.
+You cannot call tools yourself in this mode. Do not request, simulate, or invent additional tool calls.
 Do not use Copilot Plus, Brevilabs, or any remote tool gateway.
-If a tool result reports an error, explain that limitation clearly.
-Return the final user-facing answer only.`;
+
+## Source Priority
+- Use explicit user-provided context first.
+- When local tool results are present, treat them as the primary evidence for the parts of the answer they cover.
+- If no relevant local tool result is present, answer normally from the conversation and clearly state important limitations.
+
+## Citation Integrity
+- For webSearch results, use only URLs and citations included in the webSearch result as web sources.
+- For vault/localSearch results, only cite or mention notes that appear in the localSearch result.
+- Never fabricate sources, URLs, note titles, web searches, vault searches, or tool outputs.
+- If a tool result reports an error, explain that limitation clearly.
+
+## Response Policy
+- Return the final user-facing answer only.
+- Do not expose raw <tool_result> XML, JSON payloads, or process logs unless the user explicitly asks to inspect them.`;
 
 const LOCAL_CODEX_COMPOSER_INSTRUCTIONS = `When @composer is present, you may request local file changes with these XML blocks.
 

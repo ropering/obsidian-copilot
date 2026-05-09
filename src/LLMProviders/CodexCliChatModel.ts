@@ -218,9 +218,9 @@ function buildCodexPrompt(messages: BaseMessage[], attachImages: boolean): Prepa
     return {
       prompt: [
         "You are being invoked by Obsidian Copilot through Desktop Codex CLI.",
-        "The current working directory is the Obsidian vault root.",
-        "You may inspect files if useful, but you must not modify files.",
-        "Return only the final answer for the chat user. Do not include process logs or tool transcripts.",
+        "The Codex CLI process runs from the Obsidian vault root in a read-only sandbox.",
+        "The transcript below preserves the original message roles; follow those role instructions.",
+        "Return only the final answer for the chat user. Do not include process logs or raw transcripts.",
         "",
         "<conversation_transcript>",
         transcript,

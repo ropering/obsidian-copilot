@@ -74,7 +74,11 @@ describe("CodexCliChatModel", () => {
     expect(prompt).toContain('<System index="1">\nSystem rules\n</System>');
     expect(prompt).toContain('<User index="2">\nQuestion\n</User>');
     expect(prompt).toContain('<Assistant index="3">\nPrior answer\n</Assistant>');
+    expect(prompt).toContain("Desktop Codex CLI");
+    expect(prompt).toContain("read-only sandbox");
+    expect(prompt).toContain("preserves the original message roles");
     expect(prompt).toContain("Return only the final answer");
+    expect(prompt).not.toContain("inspect files if useful");
   });
 
   it("invokes Codex CLI from the configured working directory", async () => {

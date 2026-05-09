@@ -1,5 +1,6 @@
 import { ChatModelProviders } from "@/constants";
 import {
+  LOCAL_CODEX_SYSTEM_INSTRUCTIONS,
   createLocalWebSearchUnavailableResult,
   extractLocalCodexSalientTerms,
   formatLocalCodexToolResults,
@@ -77,6 +78,20 @@ describe("DesktopCodexCliToolsChainRunner helpers", () => {
         { tool: "webSearch", output: "local web search is not configured", isError: true },
       ])
     ).toContain('<tool_result name="webSearch" status="error">');
+  });
+
+  it("uses local pre-executed tool guidance with source and citation integrity", () => {
+    expect(LOCAL_CODEX_SYSTEM_INSTRUCTIONS).toContain("pre-executes local tools");
+    expect(LOCAL_CODEX_SYSTEM_INSTRUCTIONS).toContain("Source Priority");
+    expect(LOCAL_CODEX_SYSTEM_INSTRUCTIONS).toContain("Citation Integrity");
+    expect(LOCAL_CODEX_SYSTEM_INSTRUCTIONS).toContain("webSearch results");
+    expect(LOCAL_CODEX_SYSTEM_INSTRUCTIONS).toContain("Never fabricate sources");
+    expect(LOCAL_CODEX_SYSTEM_INSTRUCTIONS).toContain("answer normally from the conversation");
+    expect(LOCAL_CODEX_SYSTEM_INSTRUCTIONS).not.toContain(
+      "Use only the pre-executed local tool results"
+    );
+    expect(LOCAL_CODEX_SYSTEM_INSTRUCTIONS).not.toContain("MUST call webSearch");
+    expect(LOCAL_CODEX_SYSTEM_INSTRUCTIONS).not.toContain("native function calling");
   });
 
   it("uses a local-only web-search unavailable result", () => {
