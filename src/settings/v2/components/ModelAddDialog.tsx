@@ -598,7 +598,7 @@ export const ModelAddDialog: React.FC<ModelAddDialogProps> = ({
                 {Object.values(
                   isEmbeddingModel
                     ? omit(EmbeddingModelProviders, ["COPILOT_PLUS", "COPILOT_PLUS_JINA"])
-                    : omit(ChatModelProviders, ["COPILOT_PLUS"])
+                    : omit(ChatModelProviders, ["COPILOT_PLUS", "DESKTOP_CODEX_CLI"])
                 ).map((provider) => (
                   <SelectItem key={provider} value={provider}>
                     {getProviderLabel(provider)}

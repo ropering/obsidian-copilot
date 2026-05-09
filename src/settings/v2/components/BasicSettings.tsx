@@ -21,6 +21,7 @@ const ChainType2Label: Record<ChainType, string> = {
   [ChainType.LLM_CHAIN]: "Chat",
   [ChainType.VAULT_QA_CHAIN]: "Vault QA (Basic)",
   [ChainType.COPILOT_PLUS_CHAIN]: "Copilot Plus",
+  [ChainType.DESKTOP_CODEX_CLI_TOOLS]: "Codex Tools (Local)",
   [ChainType.PROJECT_CHAIN]: "Projects (alpha)",
 };
 

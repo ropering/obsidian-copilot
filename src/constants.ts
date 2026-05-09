@@ -193,6 +193,7 @@ export enum ChatModels {
   MISTRAL_TINY = "mistral-tiny-latest",
   DEEPSEEK_REASONER = "deepseek-reasoner",
   DEEPSEEK_CHAT = "deepseek-chat",
+  DESKTOP_CODEX_CLI_CHAT = "Desktop Codex CLI Chat",
   OPENROUTER_GEMINI_3_FLASH_PREVIEW = "google/gemini-3-flash-preview",
   OPENROUTER_GEMINI_3_PRO_PREVIEW = "google/gemini-3.1-pro-preview",
   OPENROUTER_GEMINI_2_5_FLASH = "google/gemini-2.5-flash",
@@ -223,6 +224,7 @@ export enum ChatModelProviders {
   COHEREAI = "cohereai",
   SILICONFLOW = "siliconflow",
   GITHUB_COPILOT = "github-copilot",
+  DESKTOP_CODEX_CLI = "desktop-codex-cli",
 }
 
 export enum ModelCapability {
@@ -257,6 +259,15 @@ export const BUILTIN_CHAT_MODELS: CustomModel[] = [
     core: true,
     projectEnabled: true,
     capabilities: [ModelCapability.VISION],
+  },
+  {
+    name: ChatModels.DESKTOP_CODEX_CLI_CHAT,
+    provider: ChatModelProviders.DESKTOP_CODEX_CLI,
+    enabled: true,
+    isBuiltIn: true,
+    core: false,
+    projectEnabled: true,
+    codexIgnoreRules: true,
   },
   {
     name: ChatModels.GPT_5_4,
@@ -576,7 +587,10 @@ export type Provider = ChatModelProviders | EmbeddingModelProviders;
 
 export type SettingKeyProviders = Exclude<
   ChatModelProviders,
-  ChatModelProviders.OPENAI_FORMAT | ChatModelProviders.LM_STUDIO | ChatModelProviders.OLLAMA
+  | ChatModelProviders.OPENAI_FORMAT
+  | ChatModelProviders.LM_STUDIO
+  | ChatModelProviders.OLLAMA
+  | ChatModelProviders.DESKTOP_CODEX_CLI
 >;
 
 // Provider metadata interface
@@ -730,6 +744,13 @@ export const ProviderInfo: Record<Provider, ProviderMetadata> = {
     host: "https://api.githubcopilot.com",
     curlBaseURL: "https://api.githubcopilot.com",
     keyManagementURL: "https://github.com/settings/apps/authorizations",
+    listModelURL: "",
+  },
+  [ChatModelProviders.DESKTOP_CODEX_CLI]: {
+    label: "Desktop Codex CLI",
+    host: "",
+    curlBaseURL: "",
+    keyManagementURL: "",
     listModelURL: "",
   },
 };

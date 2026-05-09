@@ -8,6 +8,7 @@ import {
   AGENT_MAX_ITERATIONS_LIMIT,
   BUILTIN_CHAT_MODELS,
   BUILTIN_EMBEDDING_MODELS,
+  ChatModelProviders,
   COPILOT_FOLDER_ROOT,
   DEFAULT_OPEN_AREA,
   DEFAULT_QA_EXCLUSIONS_SETTING,
@@ -631,9 +632,9 @@ function mergeActiveModels(
 ): CustomModel[] {
   const modelMap = new Map<string, CustomModel>();
 
-  // Add core models to the map first
+  // Add required built-ins and upgrade-added defaults first.
   builtInModels
-    .filter((model) => model.core)
+    .filter((model) => model.core || model.provider === ChatModelProviders.DESKTOP_CODEX_CLI)
     .forEach((model) => {
       modelMap.set(getModelKeyFromModel(model), { ...model });
     });

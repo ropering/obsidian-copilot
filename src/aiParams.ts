@@ -156,6 +156,9 @@ export interface CustomModel {
   // LM Studio specific fields
   useResponsesApi?: boolean;
 
+  // Desktop Codex CLI specific fields
+  codexIgnoreRules?: boolean;
+
   // OpenRouter specific fields
   enablePromptCaching?: boolean;
 

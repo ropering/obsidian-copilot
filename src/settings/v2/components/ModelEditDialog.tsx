@@ -17,7 +17,7 @@ import {
 } from "@/constants";
 import { getSettings } from "@/settings/model";
 import { debounce, getProviderInfo, getProviderLabel } from "@/utils";
-import { getApiKeyForProvider } from "@/utils/modelUtils";
+import { getApiKeyForProvider, providerRequiresApiKey } from "@/utils/modelUtils";
 import { App, Modal, Platform } from "obsidian";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createRoot, Root } from "react-dom/client";
@@ -45,6 +45,7 @@ export const ModelEditModalContent: React.FC<ModelEditModalContentProps> = ({
   const [providerInfo, setProviderInfo] = useState<ProviderMetadata>({} as ProviderMetadata);
   const settings = getSettings();
   const isBedrockProvider = localModel.provider === ChatModelProviders.AMAZON_BEDROCK;
+  const isCodexProvider = localModel.provider === ChatModelProviders.DESKTOP_CODEX_CLI;
 
   useEffect(() => {
     setLocalModel(model);
@@ -115,12 +116,13 @@ export const ModelEditModalContent: React.FC<ModelEditModalContentProps> = ({
     description,
   })) as Array<{ id: ModelCapability; label: string; description: string }>;
 
-  const displayApiKey = getApiKeyForProvider(
-    localModel.provider as SettingKeyProviders,
-    localModel
-  );
+  const displayApiKey = providerRequiresApiKey(localModel.provider)
+    ? getApiKeyForProvider(localModel.provider as SettingKeyProviders, localModel)
+    : "";
   const showOtherParameters =
-    !isEmbeddingModel && localModel.provider !== EmbeddingModelProviders.COPILOT_PLUS_JINA;
+    !isEmbeddingModel &&
+    localModel.provider !== EmbeddingModelProviders.COPILOT_PLUS_JINA &&
+    !isCodexProvider;
 
   return (
     <div className="tw-space-y-3 tw-p-4">
@@ -128,55 +130,59 @@ export const ModelEditModalContent: React.FC<ModelEditModalContentProps> = ({
         <FormField label="Model Name" required>
           <Input
             type="text"
-            disabled={localModel.core}
+            disabled={localModel.core || isCodexProvider}
             value={localModel.name}
             onChange={(e) => handleLocalUpdate("name", e.target.value)}
             placeholder="Enter model name"
           />
         </FormField>
 
-        <FormField
-          label={
-            <div className="tw-flex tw-items-center tw-gap-1.5">
-              <span className="tw-leading-none">Display Name</span>
-              <HelpTooltip
-                content={
-                  <div className="tw-flex tw-flex-col tw-gap-0.5 tw-text-sm tw-text-muted">
-                    <div className="tw-text-[12px] tw-font-bold">Suggested format:</div>
-                    <div className="tw-text-accent">[Source]-[Payment]:[Pretty Model Name]</div>
-                    <div className="tw-text-[12px]">
-                      Example:
-                      <li>Direct-Paid:Ds-r1</li>
-                      <li>OpenRouter-Paid:Ds-r1</li>
-                      <li>Perplexity-Paid:lg</li>
+        {!isCodexProvider && (
+          <FormField
+            label={
+              <div className="tw-flex tw-items-center tw-gap-1.5">
+                <span className="tw-leading-none">Display Name</span>
+                <HelpTooltip
+                  content={
+                    <div className="tw-flex tw-flex-col tw-gap-0.5 tw-text-sm tw-text-muted">
+                      <div className="tw-text-[12px] tw-font-bold">Suggested format:</div>
+                      <div className="tw-text-accent">[Source]-[Payment]:[Pretty Model Name]</div>
+                      <div className="tw-text-[12px]">
+                        Example:
+                        <li>Direct-Paid:Ds-r1</li>
+                        <li>OpenRouter-Paid:Ds-r1</li>
+                        <li>Perplexity-Paid:lg</li>
+                      </div>
                     </div>
-                  </div>
-                }
-                contentClassName="tw-max-w-96"
-              />
-            </div>
-          }
-        >
-          <Input
-            type="text"
-            placeholder="Custom display name (optional)"
-            value={localModel.displayName || ""}
-            onChange={(e) => handleLocalUpdate("displayName", e.target.value)}
-          />
-        </FormField>
+                  }
+                  contentClassName="tw-max-w-96"
+                />
+              </div>
+            }
+          >
+            <Input
+              type="text"
+              placeholder="Custom display name (optional)"
+              value={localModel.displayName || ""}
+              onChange={(e) => handleLocalUpdate("displayName", e.target.value)}
+            />
+          </FormField>
+        )}
 
         <FormField label="Provider">
           <Input type="text" value={getProviderLabel(localModel.provider)} disabled />
         </FormField>
 
-        <FormField label="Base URL" description="Leave it blank, unless you are using a proxy.">
-          <Input
-            type="text"
-            placeholder={getPlaceholderUrl()}
-            value={localModel.baseUrl || ""}
-            onChange={(e) => handleLocalUpdate("baseUrl", e.target.value)}
-          />
-        </FormField>
+        {!isCodexProvider && (
+          <FormField label="Base URL" description="Leave it blank, unless you are using a proxy.">
+            <Input
+              type="text"
+              placeholder={getPlaceholderUrl()}
+              value={localModel.baseUrl || ""}
+              onChange={(e) => handleLocalUpdate("baseUrl", e.target.value)}
+            />
+          </FormField>
+        )}
 
         {isBedrockProvider && (
           <FormField
@@ -192,20 +198,46 @@ export const ModelEditModalContent: React.FC<ModelEditModalContentProps> = ({
           </FormField>
         )}
 
-        <FormField label="API Key">
-          <PasswordInput
-            placeholder={`Enter ${providerInfo.label || "Provider"} API Key`}
-            value={displayApiKey}
-            onChange={(value) => handleLocalUpdate("apiKey", value)}
-          />
-          {providerInfo.keyManagementURL && (
-            <p className="tw-text-xs tw-text-muted">
-              <a href={providerInfo.keyManagementURL} target="_blank" rel="noopener noreferrer">
-                Get {providerInfo.label} API Key
-              </a>
-            </p>
-          )}
-        </FormField>
+        {!isCodexProvider && (
+          <FormField label="API Key">
+            <PasswordInput
+              placeholder={`Enter ${providerInfo.label || "Provider"} API Key`}
+              value={displayApiKey}
+              onChange={(value) => handleLocalUpdate("apiKey", value)}
+            />
+            {providerInfo.keyManagementURL && (
+              <p className="tw-text-xs tw-text-muted">
+                <a href={providerInfo.keyManagementURL} target="_blank" rel="noopener noreferrer">
+                  Get {providerInfo.label} API Key
+                </a>
+              </p>
+            )}
+          </FormField>
+        )}
+
+        {isCodexProvider && (
+          <FormField label="Codex CLI">
+            <div className="tw-flex tw-items-center tw-gap-2">
+              <Checkbox
+                id="codex-ignore-rules"
+                checked={localModel.codexIgnoreRules !== false}
+                onCheckedChange={(checked) => handleLocalUpdate("codexIgnoreRules", checked)}
+              />
+              <HelpTooltip
+                content={
+                  <div className="tw-text-sm tw-text-muted">
+                    Pass --ignore-rules to Codex CLI so vault-local agent rules do not affect chat
+                    answers.
+                  </div>
+                }
+              >
+                <Label htmlFor="codex-ignore-rules" className="tw-cursor-pointer tw-text-sm">
+                  Ignore local Codex rules
+                </Label>
+              </HelpTooltip>
+            </div>
+          </FormField>
+        )}
 
         {/* Prompt Caching Toggle for OpenRouter */}
         {localModel.provider === ChatModelProviders.OPENROUTERAI && (

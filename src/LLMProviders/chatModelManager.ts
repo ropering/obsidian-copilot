@@ -42,6 +42,7 @@ import { ChatOpenRouter } from "./ChatOpenRouter";
 import { ChatLMStudio } from "./ChatLMStudio";
 import { BedrockChatModel, type BedrockChatModelFields } from "./BedrockChatModel";
 import { GitHubCopilotChatModel } from "@/LLMProviders/githubCopilot/GitHubCopilotChatModel";
+import { CodexCliChatModel, type CodexCliChatModelFields } from "@/LLMProviders/CodexCliChatModel";
 
 // Patch BaseLanguageModel.prototype.getNumTokens once at module load to prevent
 // tiktoken CDN fetches. LangChain's default getNumTokens() downloads a ~3MB BPE
@@ -80,6 +81,7 @@ const CHAT_PROVIDER_CONSTRUCTORS = {
   [ChatModelProviders.DEEPSEEK]: ChatDeepSeek,
   [ChatModelProviders.AMAZON_BEDROCK]: BedrockChatModel,
   [ChatModelProviders.GITHUB_COPILOT]: GitHubCopilotChatModel,
+  [ChatModelProviders.DESKTOP_CODEX_CLI]: CodexCliChatModel,
 } as const;
 
 type ChatProviderConstructMap = typeof CHAT_PROVIDER_CONSTRUCTORS;
@@ -146,6 +148,7 @@ export default class ChatModelManager {
     [ChatModelProviders.SILICONFLOW]: () => getSettings().siliconflowApiKey,
     [ChatModelProviders.GITHUB_COPILOT]: () =>
       getSettings().githubCopilotToken || getSettings().githubCopilotAccessToken,
+    [ChatModelProviders.DESKTOP_CODEX_CLI]: () => "default-key",
   } as const;
 
   private constructor() {
@@ -433,6 +436,10 @@ export default class ChatModelManager {
         // GitHubCopilotChatModel, which injects Copilot token and headers per request.
         fetchImplementation: customModel.enableCors ? safeFetchNoThrow : undefined,
       },
+      [ChatModelProviders.DESKTOP_CODEX_CLI]: {
+        modelName,
+        codexIgnoreRules: customModel.codexIgnoreRules !== false,
+      } as CodexCliChatModelFields,
     };
 
     let selectedProviderConfig =
@@ -663,6 +670,10 @@ export default class ChatModelManager {
    * @returns True when the provider requirements are satisfied, otherwise false.
    */
   private hasProviderCredentials(model: CustomModel): boolean {
+    if (model.provider === ChatModelProviders.DESKTOP_CODEX_CLI) {
+      return true;
+    }
+
     if (model.provider === ChatModelProviders.AMAZON_BEDROCK) {
       const settings = getSettings();
       const apiKey = model.apiKey || settings.amazonBedrockApiKey;
@@ -874,6 +885,16 @@ export default class ChatModelManager {
   }
 
   async ping(model: CustomModel): Promise<boolean> {
+    if (model.provider === ChatModelProviders.DESKTOP_CODEX_CLI) {
+      const modelConfig = await this.getModelConfig(model);
+      const testModel = new CodexCliChatModel({
+        ...(modelConfig as CodexCliChatModelFields),
+        timeoutMs: 60_000,
+      });
+      await testModel.invoke([{ role: "user", content: "Reply with exactly: OK" }]);
+      return true;
+    }
+
     const tryPing = async (enableCors: boolean) => {
       const modelToTest = { ...model, enableCors };
       const modelConfig = await this.getModelConfig(modelToTest);
