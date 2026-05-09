@@ -86,6 +86,23 @@ export const normalizeFootnoteRendering = (root: HTMLElement): void => {
 const INLINE_CITATION_RE = /\[(\d+(?:\s*,\s*\d+)*)\]/g;
 
 /**
+ * Escapes text for use as a Markdown link label.
+ *
+ * @param text - Raw display text.
+ * @returns Markdown-safe link label text.
+ */
+export const escapeMarkdownLinkLabel = (text: string): string => text.replace(/([\\[\]])/g, "\\$1");
+
+/**
+ * Builds an Obsidian URI as a Markdown link instead of raw HTML.
+ *
+ * @param file - Obsidian file to link to.
+ * @returns Markdown link pointing at the file.
+ */
+export const buildObsidianMarkdownLink = (file: Pick<TFile, "path" | "basename">): string =>
+  `[${escapeMarkdownLinkLabel(file.basename)}](obsidian://open?file=${encodeURIComponent(file.path)})`;
+
+/**
  * Makes inline citation numbers (e.g., [1], [2]) clickable by linking them
  * to the corresponding source note. Reads the source mapping from the
  * rendered .copilot-sources section in the same message.
@@ -522,8 +539,7 @@ const ChatSingleMessage: React.FC<ChatSingleMessageProps> = ({
       const noteLinksProcessed = replaceLinks(
         citationPlaceholderProcessed,
         /(?<!!)\[\[([^\]]+)]]/g,
-        (file: TFile) =>
-          `<a href="obsidian://open?file=${encodeURIComponent(file.path)}">${file.basename}</a>`
+        (file: TFile) => buildObsidianMarkdownLink(file)
       );
 
       /**

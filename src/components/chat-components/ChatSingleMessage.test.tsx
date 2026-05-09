@@ -1,6 +1,8 @@
 import React from "react";
 import { render, waitFor } from "@testing-library/react";
 import ChatSingleMessage, {
+  buildObsidianMarkdownLink,
+  escapeMarkdownLinkLabel,
   normalizeFootnoteRendering,
 } from "@/components/chat-components/ChatSingleMessage";
 import { ChatMessage } from "@/types/message";
@@ -111,6 +113,24 @@ describe("normalizeFootnoteRendering", () => {
   });
 });
 
+describe("Obsidian note link preprocessing", () => {
+  it("builds markdown links instead of raw HTML anchors", () => {
+    const link = buildObsidianMarkdownLink({
+      basename: "request_원자적 노트",
+      path: "04.Archives/request_원자적 노트.md",
+    });
+
+    expect(link).toBe(
+      "[request_원자적 노트](obsidian://open?file=04.Archives%2Frequest_%EC%9B%90%EC%9E%90%EC%A0%81%20%EB%85%B8%ED%8A%B8.md)"
+    );
+    expect(link).not.toContain("<a href=");
+  });
+
+  it("escapes markdown link labels", () => {
+    expect(escapeMarkdownLinkLabel(String.raw`a\b[c]`)).toBe(String.raw`a\\b\[c\]`);
+  });
+});
+
 describe("ChatSingleMessage", () => {
   const baseMessage: ChatMessage = {
     id: "message-1",
@@ -122,6 +142,9 @@ describe("ChatSingleMessage", () => {
 
   const createAppStub = (): App =>
     ({
+      vault: {
+        getResourcePath: jest.fn(() => "app://resource"),
+      },
       workspace: {
         getActiveFile: jest.fn(() => null),
         getMostRecentLeaf: jest.fn(() => null),
@@ -175,5 +198,35 @@ describe("ChatSingleMessage", () => {
     expect(messageSegment?.querySelector(".footnote-backref")).toBeNull();
     expect(messageSegment?.querySelector(".content-hr")).not.toBeNull();
     expect(messageSegment?.querySelector('a[href="#fn-2"]')?.textContent).toBe("2");
+  });
+
+  it("passes markdown note links to the renderer without raw HTML anchors", async () => {
+    const app = createAppStub();
+    (app.metadataCache.getFirstLinkpathDest as jest.Mock).mockReturnValue({
+      basename: "Linked Note",
+      path: "Folder/Linked Note.md",
+    });
+
+    const message: ChatMessage = {
+      ...baseMessage,
+      message: "See [[Linked Note]] for details.",
+    };
+
+    render(
+      <TooltipProvider>
+        <ChatSingleMessage message={message} app={app} isStreaming={false} onDelete={() => {}} />
+      </TooltipProvider>
+    );
+
+    await waitFor(() =>
+      expect(renderMarkdownMock).toHaveBeenCalledWith(
+        "See [Linked Note](obsidian://open?file=Folder%2FLinked%20Note.md) for details.",
+        expect.any(HTMLElement),
+        "",
+        expect.anything()
+      )
+    );
+
+    expect(renderMarkdownMock.mock.calls[0][0]).not.toContain("<a href=");
   });
 });
