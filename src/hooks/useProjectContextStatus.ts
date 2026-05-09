@@ -1,5 +1,5 @@
-import { ChainType } from "@/chainFactory";
 import { useChainType, useProjectLoading, useProjectContextLoad } from "@/aiParams";
+import { isProjectLikeChain } from "@/utils";
 
 /**
  * Hook to calculate the project context status based on project loading state and context load state.
@@ -21,7 +21,7 @@ export function useProjectContextStatus(): ProjectContextStatus {
 
   const contextStatus = (() => {
     // Only calculate status for project mode
-    if (currentChain !== ChainType.PROJECT_CHAIN) {
+    if (!isProjectLikeChain(currentChain)) {
       return "initial";
     }
 

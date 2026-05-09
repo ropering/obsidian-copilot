@@ -67,6 +67,7 @@ const PROMPT_KEYS: Record<ChainType, Array<keyof typeof SUGGESTED_PROMPTS>> = {
   [ChainType.VAULT_QA_CHAIN]: ["qaVault", "qaVault", "quoteNote"],
   [ChainType.COPILOT_PLUS_CHAIN]: ["copilotPlus", "copilotPlus", "copilotPlus"],
   [ChainType.DESKTOP_CODEX_CLI_TOOLS]: ["activeNote", "qaVault", "quoteNote"],
+  [ChainType.DESKTOP_CODEX_CLI_PROJECTS]: ["copilotPlus", "qaVault", "activeNote"],
   [ChainType.PROJECT_CHAIN]: ["copilotPlus", "copilotPlus", "copilotPlus"],
 };
 

@@ -11,6 +11,7 @@ import {
   AutonomousAgentChainRunner,
   ChainRunner,
   CopilotPlusChainRunner,
+  DesktopCodexCliProjectsChainRunner,
   DesktopCodexCliToolsChainRunner,
   LLMChainRunner,
   ProjectChainRunner,
@@ -123,13 +124,19 @@ export default class ChainManager {
     const chainType = getChainType();
     const currentProject = getCurrentProject();
 
-    if (chainType === ChainType.PROJECT_CHAIN && !currentProject) {
+    if (
+      (chainType === ChainType.PROJECT_CHAIN ||
+        chainType === ChainType.DESKTOP_CODEX_CLI_PROJECTS) &&
+      !currentProject
+    ) {
       return;
     }
 
     try {
       newModelKey =
-        chainType === ChainType.PROJECT_CHAIN ? currentProject?.projectModelKey : getModelKey();
+        chainType === ChainType.PROJECT_CHAIN || chainType === ChainType.DESKTOP_CODEX_CLI_PROJECTS
+          ? currentProject?.projectModelKey
+          : getModelKey();
 
       if (!newModelKey) {
         throw new MissingModelKeyError("No model key found. Please select a model in settings.");
@@ -277,6 +284,17 @@ export default class ChainManager {
         break;
       }
 
+      case ChainType.DESKTOP_CODEX_CLI_PROJECTS: {
+        this.chain = ChainFactory.createNewLLMChain({
+          llm: chatModel,
+          memory: memory,
+          prompt: options.prompt || chatPrompt,
+          abortController: options.abortController,
+        }) as RunnableSequence;
+        setChainType(ChainType.DESKTOP_CODEX_CLI_PROJECTS);
+        break;
+      }
+
       case ChainType.PROJECT_CHAIN: {
         // For initial load of the plugin
         await this.initializeQAChain(options);
@@ -313,6 +331,8 @@ export default class ChainManager {
         return new CopilotPlusChainRunner(this);
       case ChainType.DESKTOP_CODEX_CLI_TOOLS:
         return new DesktopCodexCliToolsChainRunner(this);
+      case ChainType.DESKTOP_CODEX_CLI_PROJECTS:
+        return new DesktopCodexCliProjectsChainRunner(this);
       case ChainType.PROJECT_CHAIN:
         return new ProjectChainRunner(this);
       default:

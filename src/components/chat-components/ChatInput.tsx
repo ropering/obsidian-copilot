@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ModelSelector } from "@/components/ui/ModelSelector";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChatToolControls } from "./ChatToolControls";
-import { isPlusChain, supportsChatToolControls } from "@/utils";
+import { isPlusChain, isProjectLikeChain, supportsChatToolControls } from "@/utils";
 import {
   mergeWebTabContexts,
   normalizeUrlString,
@@ -174,10 +174,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   // Sync autonomous agent toggle with settings and chain type
   useEffect(() => {
-    if (
-      currentChain === ChainType.PROJECT_CHAIN ||
-      currentChain === ChainType.DESKTOP_CODEX_CLI_TOOLS
-    ) {
+    if (isProjectLikeChain(currentChain) || currentChain === ChainType.DESKTOP_CODEX_CLI_TOOLS) {
       // Force off in Projects and local Codex tools modes
       setAutonomousAgentToggle(false);
     } else {
@@ -187,7 +184,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   }, [settings.enableAutonomousAgent, currentChain]);
 
   useEffect(() => {
-    if (currentChain === ChainType.PROJECT_CHAIN) {
+    if (isProjectLikeChain(currentChain)) {
       setSelectedProject(getCurrentProject());
 
       const unsubscribe = subscribeToProjectChange((project) => {
@@ -213,11 +210,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   }, [isProjectLoading, loadingMessages.length]);
 
   const getDisplayModelKey = (): string => {
-    if (
-      selectedProject &&
-      currentChain === ChainType.PROJECT_CHAIN &&
-      selectedProject.projectModelKey
-    ) {
+    if (selectedProject && isProjectLikeChain(currentChain) && selectedProject.projectModelKey) {
       return selectedProject.projectModelKey;
     }
     return currentModelKey;
@@ -815,7 +808,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
               onChange={(modelKey) => {
                 // In project mode, we don't update the global model key
                 // as the project model takes precedence
-                if (currentChain !== ChainType.PROJECT_CHAIN) {
+                if (!isProjectLikeChain(currentChain)) {
                   setCurrentModelKey(modelKey);
                 }
               }}

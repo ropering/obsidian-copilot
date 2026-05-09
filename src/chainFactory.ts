@@ -58,6 +58,7 @@ export enum ChainType {
   VAULT_QA_CHAIN = "vault_qa",
   COPILOT_PLUS_CHAIN = "copilot_plus",
   DESKTOP_CODEX_CLI_TOOLS = "desktop_codex_cli_tools",
+  DESKTOP_CODEX_CLI_PROJECTS = "desktop_codex_cli_projects",
   PROJECT_CHAIN = "project",
 }
 

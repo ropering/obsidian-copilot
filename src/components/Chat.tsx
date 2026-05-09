@@ -46,7 +46,7 @@ import { updateSetting, useSettingsValue } from "@/settings/model";
 import { ChatUIState } from "@/state/ChatUIState";
 import { FileParserManager } from "@/tools/FileParserManager";
 import { ChatMessage } from "@/types/message";
-import { err2String, isPlusChain } from "@/utils";
+import { err2String, isPlusChain, isProjectLikeChain } from "@/utils";
 import { arrayBufferToBase64 } from "@/utils/base64";
 import { Notice, TFile } from "obsidian";
 import { ContextManageModal } from "@/components/modals/project/context-manage-modal";
@@ -168,7 +168,7 @@ const ChatInternal: React.FC<ChatProps & { chatInput: ReturnType<typeof useChatI
 
   // Calculate whether to show ProgressCard based on status and user preference
   const shouldShowProgressCard = () => {
-    if (selectedChain !== ChainType.PROJECT_CHAIN) return false;
+    if (!isProjectLikeChain(selectedChain)) return false;
 
     // If user has explicitly set visibility, respect that choice
     if (progressCardVisible !== null) {
@@ -189,7 +189,7 @@ const ChatInternal: React.FC<ChatProps & { chatInput: ReturnType<typeof useChatI
    * Hidden in project mode (project card takes priority) and when user explicitly closed it.
    */
   const shouldShowIndexingCard = () => {
-    if (selectedChain === ChainType.PROJECT_CHAIN) return false;
+    if (isProjectLikeChain(selectedChain)) return false;
     if (indexingCardVisible === false) return false;
     // Show when indexing is active or just completed (before auto-close)
     return indexingState.isActive || indexingState.completionStatus !== "none";
@@ -721,7 +721,7 @@ const ChatInternal: React.FC<ChatProps & { chatInput: ReturnType<typeof useChatI
     // Suppress web selection to prevent it from reappearing in new chat
     plugin.suppressCurrentWebSelection(webSelectionUrl);
     // Respect the autoAddActiveContentToContext setting for all non-project chains
-    if (selectedChain === ChainType.PROJECT_CHAIN) {
+    if (isProjectLikeChain(selectedChain)) {
       setIncludeActiveNote(false);
       setIncludeActiveWebTab(false);
     } else {
@@ -825,7 +825,7 @@ const ChatInternal: React.FC<ChatProps & { chatInput: ReturnType<typeof useChatI
   useEffect(() => {
     if (settings.autoAddActiveContentToContext !== undefined) {
       // Only apply the setting if not in Project mode
-      if (selectedChain === ChainType.PROJECT_CHAIN) {
+      if (isProjectLikeChain(selectedChain)) {
         setIncludeActiveNote(false);
         setIncludeActiveWebTab(false);
       } else {
@@ -853,7 +853,7 @@ const ChatInternal: React.FC<ChatProps & { chatInput: ReturnType<typeof useChatI
           onEdit={handleEdit}
           onDelete={handleDelete}
           onReplaceChat={setInputMessage}
-          showHelperComponents={selectedChain !== ChainType.PROJECT_CHAIN}
+          showHelperComponents={!isProjectLikeChain(selectedChain)}
         />
         {shouldShowProgressCard() ? (
           <div className="tw-inset-0 tw-z-modal tw-flex tw-items-center tw-justify-center tw-rounded-xl">
@@ -895,7 +895,7 @@ const ChatInternal: React.FC<ChatProps & { chatInput: ReturnType<typeof useChatI
               onModeChange={(newMode) => {
                 setPreviousMode(selectedChain);
                 // Hide chat UI when switching to project mode
-                if (newMode === ChainType.PROJECT_CHAIN) {
+                if (isProjectLikeChain(newMode)) {
                   setShowChatUI(false);
                 }
               }}
@@ -923,7 +923,7 @@ const ChatInternal: React.FC<ChatProps & { chatInput: ReturnType<typeof useChatI
               selectedImages={selectedImages}
               onAddImage={(files: File[]) => setSelectedImages((prev) => [...prev, ...files])}
               setSelectedImages={setSelectedImages}
-              disableModelSwitch={selectedChain === ChainType.PROJECT_CHAIN}
+              disableModelSwitch={isProjectLikeChain(selectedChain)}
               selectedTextContexts={selectedTextContexts}
               onRemoveSelectedText={handleRemoveSelectedText}
               showProgressCard={() => {
@@ -952,8 +952,8 @@ const ChatInternal: React.FC<ChatProps & { chatInput: ReturnType<typeof useChatI
               <span>Drop files here...</span>
             </div>
           )}
-          {selectedChain === ChainType.PROJECT_CHAIN && (
-            <div className={`${selectedChain === ChainType.PROJECT_CHAIN ? "tw-z-modal" : ""}`}>
+          {isProjectLikeChain(selectedChain) && (
+            <div className={`${isProjectLikeChain(selectedChain) ? "tw-z-modal" : ""}`}>
               <ProjectList
                 projects={settings.projectList || []}
                 defaultOpen={true}
@@ -980,8 +980,8 @@ const ChatInternal: React.FC<ChatProps & { chatInput: ReturnType<typeof useChatI
               />
             </div>
           )}
-          {(selectedChain !== ChainType.PROJECT_CHAIN ||
-            (selectedChain === ChainType.PROJECT_CHAIN && showChatUI)) &&
+          {(!isProjectLikeChain(selectedChain) ||
+            (isProjectLikeChain(selectedChain) && showChatUI)) &&
             renderChatComponents()}
         </div>
       </div>

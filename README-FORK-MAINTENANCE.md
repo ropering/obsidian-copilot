@@ -206,6 +206,47 @@ Vault QA 예시:
 - `codex tools (local) requires the selected chat model...` 오류가 나오면 chat model이 `Desktop Codex CLI Chat`인지 확인합니다.
 - 응답이 늦게 보이는 것은 token streaming이 아니라 Codex CLI 완료 후 단일 chunk로 표시되는 현재 v1 동작입니다.
 
+### 6.4 `codex projects (local)` 모드
+
+`codex projects (local)`은 Copilot Plus의 Projects UX와 Project 설정을 재사용하되, Plus license gate나 Brevilabs 변환 API를 사용하지 않는 Desktop Codex CLI 전용 local project mode입니다.
+
+동작 방식:
+
+- Project 목록, Project별 system prompt, Project별 model 설정을 기존 UI에서 그대로 사용합니다.
+- Project context는 local loader가 매 요청 시 구성하고 `<ProjectContext>` 형태로 Codex CLI prompt에 전달합니다.
+- 지원 파일은 `md`, `base`, `canvas`입니다.
+- Project Web URL 목록은 `Local Services > Local Web Search` provider로 검색/요약하여 Web Content context로 전달합니다.
+- PDF, DOCX, PPTX, YouTube, Twitter/X, Brevilabs `docs4llm/url4llm/youtube4llm/twitter4llm` 경로는 호출하지 않습니다.
+- 미지원 항목은 progress/status에 `local mode unsupported`로 표시합니다.
+
+설정 절차:
+
+1. Project의 model을 `Desktop Codex CLI Chat`으로 선택합니다.
+2. 기능 선택 목록에서 `codex projects (local)`을 선택합니다.
+3. 기존 Projects 화면에서 Project를 생성하거나 선택합니다.
+4. Project context에는 Markdown/base/canvas 파일 패턴과 Web URL 목록만 넣는 것을 권장합니다.
+5. Web URL context를 쓰려면 `Local Services > Local Web Search`에서 Tavily 등 provider와 API key를 설정합니다.
+
+질문 예시:
+
+```text
+이 프로젝트 context를 기준으로 현재 설계의 핵심 결정사항과 미해결 리스크를 정리해줘.
+```
+
+```text
+@vault 이 프로젝트와 관련된 vault 내용을 추가로 찾아서 Project context와 함께 비교해줘.
+```
+
+```text
+Project Web URL context와 내 Markdown 노트의 내용을 종합해서 다음 구현 순서를 제안해줘.
+```
+
+주의점:
+
+- 이 모드는 Plus Projects의 local-compatible subset입니다. 문서 변환, YouTube transcript, Twitter/X 변환은 Plus와 동일하게 동작하지 않습니다.
+- Project context가 큰 경우 Codex CLI 응답이 늦게 표시될 수 있습니다.
+- Plus Projects와 혼동하지 않도록 Brevilabs fallback을 추가하지 않습니다.
+
 ## 7. 원본 업데이트 반영 방법
 
 작업 브랜치가 깨끗한 상태인지 먼저 확인합니다.
@@ -270,6 +311,8 @@ npm run build
 - 이미지 1개와 2개 이상 첨부 질문이 `input_too_large` 없이 처리되는지 확인합니다.
 - `codex tools (local)`에서 `@vault`, `@composer`, `@memory` 동작을 확인합니다.
 - `codex tools (local)`에서 `@websearch`가 Local Web Search provider를 통해 동작하는지 확인합니다.
+- `codex projects (local)`에서 Markdown/base/canvas Project context가 Codex CLI 답변에 반영되는지 확인합니다.
+- `codex projects (local)`에서 PDF/DOCX/YouTube 항목이 Brevilabs fallback 없이 `local mode unsupported`로 표시되는지 확인합니다.
 - Plus 라이선스가 없는 상태에서 Plus-only 기능은 기존처럼 차단되는지 확인합니다.
 
 ## 9. 주의점
@@ -287,6 +330,8 @@ npm run build
 - `codex tools (local)` instruction은 Plus prompt의 source/citation integrity 원칙만 local pre-executed tool 방식에 맞춰 반영하며, Plus runner를 직접 호출하지 않습니다.
 - Local Codex tool result formatting은 `renderCiCMessage`, `injectGuidanceBeforeUserQuery`, citation utility 같은 기존 공용 helper를 우선 사용합니다.
 - Local Codex `@websearch`는 Copilot Plus/Brevilabs를 호출하지 않습니다. 별도 Local Web Search 설정만 사용합니다.
+- Local Codex Projects는 Markdown/base/canvas와 Local Web Search 기반 Web URL만 지원합니다.
+- Local Codex Projects에서 PDF/DOCX/PPTX/YouTube/Twitter/X를 Brevilabs로 fallback하지 않습니다.
 - SearXNG는 API key가 필요 없지만 사용자가 직접 로컬 또는 self-host endpoint를 준비해야 합니다.
 - Firecrawl/Perplexity/Tavily Local Web Search는 사용자의 별도 API key가 필요하며 Plus license key와 무관합니다.
 - Tavily Local Web Search는 `Search Depth`와 `Max Results`만 사용자 설정으로 열고, `include_answer=false`, `include_images=false`를 유지합니다.

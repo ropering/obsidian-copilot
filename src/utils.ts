@@ -263,6 +263,8 @@ export const stringToChainType = (chain: string): ChainType => {
       return ChainType.COPILOT_PLUS_CHAIN;
     case "desktop_codex_cli_tools":
       return ChainType.DESKTOP_CODEX_CLI_TOOLS;
+    case "desktop_codex_cli_projects":
+      return ChainType.DESKTOP_CODEX_CLI_PROJECTS;
     case "project":
       return ChainType.PROJECT_CHAIN;
     default:
@@ -418,6 +420,18 @@ export function isPlusChain(chainType: ChainType): boolean {
 }
 
 /**
+ * Checks if a chain type uses project selection and project-scoped chat isolation.
+ * Local Codex projects are intentionally excluded from isPlusChain.
+ * @param chainType The chain type to check
+ * @returns true if this is a project-style chain, false otherwise
+ */
+export function isProjectLikeChain(chainType: ChainType): boolean {
+  return (
+    chainType === ChainType.PROJECT_CHAIN || chainType === ChainType.DESKTOP_CODEX_CLI_PROJECTS
+  );
+}
+
+/**
  * Checks whether the current chain supports explicit chat tool controls.
  * This is intentionally broader than isPlusChain so local Codex tools can show
  * @tools without unlocking Plus-only context features.
@@ -425,7 +439,11 @@ export function isPlusChain(chainType: ChainType): boolean {
  * @returns true if this chain can accept explicit @tool commands
  */
 export function supportsChatToolControls(chainType: ChainType): boolean {
-  return isPlusChain(chainType) || chainType === ChainType.DESKTOP_CODEX_CLI_TOOLS;
+  return (
+    isPlusChain(chainType) ||
+    chainType === ChainType.DESKTOP_CODEX_CLI_TOOLS ||
+    chainType === ChainType.DESKTOP_CODEX_CLI_PROJECTS
+  );
 }
 
 /**

@@ -12,6 +12,7 @@ import { shouldUseMiyo } from "@/miyo/miyoUtils";
 import { navigateToPlusPage, useIsPlusUser } from "@/plusUtils";
 import { updateSetting, useSettingsValue } from "@/settings/model";
 import { Docs4LLMParser } from "@/tools/FileParserManager";
+import { isProjectLikeChain } from "@/utils";
 import { isRateLimitError } from "@/utils/rateLimitUtils";
 import { DropdownMenu, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import {
@@ -218,14 +219,14 @@ export function ChatControls({
     // If leaving project mode with autosave enabled, save chat BEFORE clearing project context
     // This ensures the chat is saved with the correct project prefix
     const isLeavingProjectMode =
-      selectedChain === ChainType.PROJECT_CHAIN && chainType !== ChainType.PROJECT_CHAIN;
+      isProjectLikeChain(selectedChain) && !isProjectLikeChain(chainType);
     if (isLeavingProjectMode && settings.autosaveChat) {
       await onSaveAsNote();
     }
 
     setSelectedChain(chainType);
     onModeChange(chainType);
-    if (chainType !== ChainType.PROJECT_CHAIN) {
+    if (!isProjectLikeChain(chainType)) {
       setCurrentProject(null);
       onCloseProject?.();
     }
@@ -240,6 +241,7 @@ export function ChatControls({
               {selectedChain === ChainType.LLM_CHAIN && "chat (free)"}
               {selectedChain === ChainType.VAULT_QA_CHAIN && "vault QA (free)"}
               {selectedChain === ChainType.DESKTOP_CODEX_CLI_TOOLS && "codex tools (local)"}
+              {selectedChain === ChainType.DESKTOP_CODEX_CLI_PROJECTS && "codex projects (local)"}
               {selectedChain === ChainType.COPILOT_PLUS_CHAIN && (
                 <div className="tw-flex tw-items-center tw-gap-1">
                   <Sparkles className="tw-size-4" />
@@ -271,6 +273,14 @@ export function ChatControls({
               }}
             >
               codex tools (local)
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => {
+                handleModeChange(ChainType.DESKTOP_CODEX_CLI_PROJECTS);
+              }}
+            >
+              <LibraryBig className="tw-size-4" />
+              codex projects (local)
             </DropdownMenuItem>
             {isPlusUser ? (
               <DropdownMenuItem
@@ -331,7 +341,7 @@ export function ChatControls({
           </TooltipTrigger>
           <TooltipContent>New Chat</TooltipContent>
         </Tooltip>
-        {selectedChain !== ChainType.PROJECT_CHAIN && <ChatSettingsPopover />}
+        {!isProjectLikeChain(selectedChain) && <ChatSettingsPopover />}
         {!settings.autosaveChat && (
           <Tooltip>
             <TooltipTrigger asChild>

@@ -12,6 +12,7 @@ import {
   getUtf8ByteLength,
   isFolderMatch,
   isPlusChain,
+  isProjectLikeChain,
   processVariableNameForNotePath,
   removeThinkTags,
   stringToChainType,
@@ -126,11 +127,21 @@ describe("chain type helpers", () => {
     expect(supportsChatToolControls(chainType)).toBe(true);
   });
 
+  it("parses Desktop Codex local projects chain as project-like but not Plus", () => {
+    const chainType = stringToChainType("desktop_codex_cli_projects");
+
+    expect(chainType).toBe("desktop_codex_cli_projects");
+    expect(isPlusChain(chainType)).toBe(false);
+    expect(isProjectLikeChain(chainType)).toBe(true);
+    expect(supportsChatToolControls(chainType)).toBe(true);
+  });
+
   it("keeps Plus chain detection separate from tool-control support", () => {
     expect(supportsChatToolControls("llm_chain" as any)).toBe(false);
     expect(supportsChatToolControls("vault_qa" as any)).toBe(false);
     expect(supportsChatToolControls("copilot_plus" as any)).toBe(true);
     expect(supportsChatToolControls("project" as any)).toBe(true);
+    expect(supportsChatToolControls("desktop_codex_cli_projects" as any)).toBe(true);
   });
 });
 

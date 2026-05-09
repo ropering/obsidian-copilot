@@ -58,7 +58,7 @@ export default class ProjectManager {
 
     subscribeToChainTypeChange(async () => {
       // When switching from other modes to project mode, no need to update the chain.
-      if (isProjectMode()) {
+      if (isProjectMode() || getChainType() === ChainType.DESKTOP_CODEX_CLI_PROJECTS) {
         return;
       }
       const settings = getSettings();
@@ -214,6 +214,12 @@ export default class ProjectManager {
       // through the entire process
       await this.loadNextProjectMessage();
       await this.getCurrentChainManager().createChainWithNewModel();
+      if (getChainType() === ChainType.DESKTOP_CODEX_CLI_PROJECTS) {
+        this.refreshChatView();
+        this.touchProjectUsageTimestamps(project);
+        logInfo(`Switched to local Codex project: ${project.name}`);
+        return;
+      }
       // Update FileParserManager with the current project
       this.fileParserManager = new FileParserManager(
         BrevilabsClient.getInstance(),

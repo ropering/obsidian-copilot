@@ -15,6 +15,10 @@ import { BaseChainRunner } from "./BaseChainRunner";
 import { loadAndAddChatHistory } from "./utils/chatHistoryUtils";
 import { getWebSearchCitationInstructions } from "./utils/citationUtils";
 import { injectGuidanceBeforeUserQuery, renderCiCMessage } from "./utils/cicPromptUtils";
+import {
+  addLocalCodexFallbackSources,
+  formatLocalCodexSearchContext,
+} from "./utils/localCodexSearchContext";
 import { recordPromptPayload } from "./utils/promptPayloadRecorder";
 import { ThinkBlockStreamer } from "./utils/ThinkBlockStreamer";
 
@@ -32,6 +36,8 @@ export interface LocalCodexToolResult {
   tool: string;
   output: string;
   isError?: boolean;
+  sources?: { title: string; path: string; score: number; explanation?: any }[];
+  fallbackSources?: { title?: string; path?: string }[];
 }
 
 export type LocalCodexComposerExecutor = (
@@ -331,7 +337,7 @@ export class DesktopCodexCliToolsChainRunner extends BaseChainRunner {
   /**
    * Ensures the selected response model is the Desktop Codex CLI provider.
    */
-  private assertDesktopCodexCliModelSelected(): void {
+  protected assertDesktopCodexCliModelSelected(): void {
     const settings = getSettings();
     const modelKey = getModelKey();
     const currentModel = findCustomModel(modelKey, settings.activeModels);
@@ -349,7 +355,7 @@ export class DesktopCodexCliToolsChainRunner extends BaseChainRunner {
    * @param userMessage - Current chat message.
    * @returns Raw L5 user text when available, otherwise a best-effort fallback.
    */
-  private getMessageForToolAnalysis(userMessage: ChatMessage): string {
+  protected getMessageForToolAnalysis(userMessage: ChatMessage): string {
     const l5Text = userMessage.contextEnvelope?.layers.find(
       (layer) => layer.id === "L5_USER"
     )?.text;
@@ -363,7 +369,7 @@ export class DesktopCodexCliToolsChainRunner extends BaseChainRunner {
    * @param updateLoadingMessage - Optional loading-message callback.
    * @returns Tool results to inject into the prompt.
    */
-  private async executeLocalTools(
+  protected async executeLocalTools(
     messageForAnalysis: string,
     updateLoadingMessage?: (message: string) => void
   ): Promise<LocalCodexToolResult[]> {
@@ -378,7 +384,13 @@ export class DesktopCodexCliToolsChainRunner extends BaseChainRunner {
           query: cleanQuery,
           salientTerms: extractLocalCodexSalientTerms(cleanQuery),
         });
-        results.push({ tool: "localSearch", output: stringifyToolOutput(output) });
+        const formatted = formatLocalCodexSearchContext(output, true);
+        results.push({
+          tool: "localSearch",
+          output: formatted.formattedForLLM,
+          sources: formatted.sources,
+          fallbackSources: formatted.fallbackSources,
+        });
       } catch (error) {
         results.push({
           tool: "localSearch",
@@ -447,7 +459,7 @@ export class DesktopCodexCliToolsChainRunner extends BaseChainRunner {
    * @param includeComposerInstructions - Whether composer XML instructions are needed.
    * @returns Messages ready for the selected chat model.
    */
-  private async constructMessages(
+  protected async constructMessages(
     userMessage: ChatMessage,
     toolResults: LocalCodexToolResult[],
     includeComposerInstructions: boolean
@@ -530,12 +542,13 @@ export class DesktopCodexCliToolsChainRunner extends BaseChainRunner {
   ): Promise<string> {
     const streamer = new ThinkBlockStreamer(updateCurrentAiMessage, true);
     const updateLoadingMessage = options.updateLoadingMessage;
+    let toolResults: LocalCodexToolResult[] = [];
 
     try {
       this.assertDesktopCodexCliModelSelected();
 
       const messageForAnalysis = this.getMessageForToolAnalysis(userMessage);
-      const toolResults = await this.executeLocalTools(messageForAnalysis, updateLoadingMessage);
+      toolResults = await this.executeLocalTools(messageForAnalysis, updateLoadingMessage);
       updateLoadingMessage?.(LOADING_MESSAGES.DEFAULT);
 
       const includeComposerInstructions = hasLocalCodexToolCommand(
@@ -576,6 +589,11 @@ export class DesktopCodexCliToolsChainRunner extends BaseChainRunner {
         fullResponse = await processLocalCodexComposerBlocks(fullResponse);
       }
 
+      const fallbackSources = toolResults.flatMap((result) => result.fallbackSources ?? []);
+      if (fallbackSources.length > 0) {
+        fullResponse = addLocalCodexFallbackSources(fullResponse, fallbackSources);
+      }
+
       streamer.processChunk({ content: fullResponse });
     } catch (error: any) {
       updateLoadingMessage?.(LOADING_MESSAGES.DEFAULT);
@@ -590,6 +608,7 @@ export class DesktopCodexCliToolsChainRunner extends BaseChainRunner {
     }
 
     const result = streamer.close();
+    const sources = toolResults.flatMap((toolResult) => toolResult.sources ?? []);
     const responseMetadata: ResponseMetadata = {
       wasTruncated: result.wasTruncated,
       tokenUsage: result.tokenUsage ?? undefined,
@@ -601,7 +620,7 @@ export class DesktopCodexCliToolsChainRunner extends BaseChainRunner {
       abortController,
       addMessage,
       updateCurrentAiMessage,
-      undefined,
+      sources.length > 0 ? sources : undefined,
       undefined,
       responseMetadata
     );
