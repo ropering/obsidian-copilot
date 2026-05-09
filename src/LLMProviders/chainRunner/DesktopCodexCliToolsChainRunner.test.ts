@@ -28,13 +28,9 @@ jest.mock("@/tools/toolManager", () => ({
   },
 }));
 
-jest.mock("@/LLMProviders/selfHostServices", () => ({
-  hasSelfHostSearchKey: jest.fn(() => false),
-  selfHostWebSearch: jest.fn(),
-}));
-
-jest.mock("@/plusUtils", () => ({
-  isSelfHostModeValid: jest.fn(() => false),
+jest.mock("@/LLMProviders/localWebSearch", () => ({
+  hasLocalWebSearchConfig: jest.fn(() => false),
+  localWebSearch: jest.fn(),
 }));
 
 describe("DesktopCodexCliToolsChainRunner helpers", () => {

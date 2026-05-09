@@ -2,9 +2,8 @@ import { getModelKey } from "@/aiParams";
 import type { CustomModel } from "@/aiParams";
 import { ChatModelProviders, LOADING_MESSAGES } from "@/constants";
 import { LayerToMessagesConverter } from "@/context/LayerToMessagesConverter";
-import { hasSelfHostSearchKey, selfHostWebSearch } from "@/LLMProviders/selfHostServices";
+import { hasLocalWebSearchConfig, localWebSearch } from "@/LLMProviders/localWebSearch";
 import { logInfo, logWarn } from "@/logger";
-import { isSelfHostModeValid } from "@/plusUtils";
 import { getSettings } from "@/settings/model";
 import { editFileTool, writeFileTool } from "@/tools/ComposerTools";
 import { updateMemoryTool } from "@/tools/memoryTools";
@@ -300,9 +299,9 @@ export class DesktopCodexCliToolsChainRunner extends BaseChainRunner {
       hasLocalCodexToolCommand(lowerMessage, "@web")
     ) {
       updateLoadingMessage?.(LOADING_MESSAGES.SEARCHING_WEB);
-      if (isSelfHostModeValid() && hasSelfHostSearchKey()) {
+      if (hasLocalWebSearchConfig()) {
         try {
-          const output = await selfHostWebSearch(cleanQuery);
+          const output = await localWebSearch(cleanQuery);
           results.push({
             tool: "webSearch",
             output: stringifyToolOutput([{ type: "web_search", ...output }]),

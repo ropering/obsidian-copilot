@@ -152,6 +152,12 @@ export interface CopilotSettings {
   perplexityApiKey: string;
   /** Supadata API key for self-host YouTube transcripts */
   supadataApiKey: string;
+  /** Provider used by Desktop Codex local tools for web search */
+  localWebSearchProvider: "searxng" | "firecrawl" | "perplexity";
+  /** Base URL for keyless local SearXNG web search */
+  localWebSearchUrl: string;
+  /** API key for local web search providers that require one */
+  localWebSearchApiKey: string;
   /** Enable lexical boosts (folder and graph) in search - default: true */
   enableLexicalBoosts: boolean;
   /**
@@ -452,6 +458,23 @@ export function sanitizeSettings(settings: CopilotSettings): CopilotSettings {
     )
   ) {
     sanitizedSettings.selfHostSearchProvider = DEFAULT_SETTINGS.selfHostSearchProvider;
+  }
+
+  const validLocalWebSearchProviders = ["searxng", "firecrawl", "perplexity"] as const;
+  if (
+    !validLocalWebSearchProviders.includes(
+      sanitizedSettings.localWebSearchProvider as (typeof validLocalWebSearchProviders)[number]
+    )
+  ) {
+    sanitizedSettings.localWebSearchProvider = DEFAULT_SETTINGS.localWebSearchProvider;
+  }
+
+  if (typeof sanitizedSettings.localWebSearchUrl !== "string") {
+    sanitizedSettings.localWebSearchUrl = DEFAULT_SETTINGS.localWebSearchUrl;
+  }
+
+  if (typeof sanitizedSettings.localWebSearchApiKey !== "string") {
+    sanitizedSettings.localWebSearchApiKey = DEFAULT_SETTINGS.localWebSearchApiKey;
   }
 
   // Ensure passMarkdownImages has a default value

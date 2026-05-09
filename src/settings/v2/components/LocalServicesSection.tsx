@@ -4,7 +4,9 @@ import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { ObsidianNativeSelect } from "@/components/ui/obsidian-native-select";
+import { SettingItem } from "@/components/ui/setting-item";
 import { ChatModelProviders } from "@/constants";
+import type { LocalWebSearchProvider } from "@/LLMProviders/localWebSearch";
 import ProjectManager from "@/LLMProviders/projectManager";
 import { logError } from "@/logger";
 import { updateSetting, useSettingsValue } from "@/settings/model";
@@ -29,6 +31,15 @@ interface LocalModel {
   id: string;
   name: string;
 }
+
+const LOCAL_WEB_SEARCH_PROVIDER_OPTIONS: Array<{
+  label: string;
+  value: LocalWebSearchProvider;
+}> = [
+  { label: "SearXNG (no API key)", value: "searxng" },
+  { label: "Firecrawl", value: "firecrawl" },
+  { label: "Perplexity Sonar", value: "perplexity" },
+];
 
 /** Normalize URL: trim, remove trailing slashes and /v1 suffix */
 function normalizeBaseUrl(url: string): string {
@@ -233,6 +244,59 @@ function LocalServiceItem({ service, expanded, onToggleExpand }: LocalServiceIte
   );
 }
 
+/** Settings for Desktop Codex local web search. */
+function LocalWebSearchSettings() {
+  const settings = useSettingsValue();
+  const provider = settings.localWebSearchProvider;
+
+  return (
+    <div className="tw-mt-6 tw-border-t tw-border-border tw-pt-4">
+      <div className="tw-mb-3">
+        <h3 className="tw-m-0 tw-text-base tw-font-bold">Local Web Search</h3>
+        <div className="tw-mt-1 tw-text-xs tw-text-muted">
+          Used by `codex tools (local)` for `@websearch`. This does not call Copilot Plus or
+          Brevilabs.
+        </div>
+      </div>
+
+      <div className="tw-space-y-4">
+        <SettingItem
+          type="select"
+          title="Provider"
+          description="Choose the local web search backend for Desktop Codex tools."
+          value={provider}
+          onChange={(value) =>
+            updateSetting("localWebSearchProvider", value as LocalWebSearchProvider)
+          }
+          options={LOCAL_WEB_SEARCH_PROVIDER_OPTIONS}
+        />
+
+        {provider === "searxng" && (
+          <SettingItem
+            type="text"
+            title="SearXNG URL"
+            description="Base URL of your local or self-hosted SearXNG instance. The JSON search endpoint must be enabled."
+            value={settings.localWebSearchUrl}
+            onChange={(value) => updateSetting("localWebSearchUrl", value)}
+            placeholder="http://localhost:8080"
+          />
+        )}
+
+        {provider !== "searxng" && (
+          <SettingItem
+            type="password"
+            title={provider === "firecrawl" ? "Firecrawl API Key" : "Perplexity API Key"}
+            description="Your own API key for local Codex web search. This is separate from Copilot Plus settings."
+            value={settings.localWebSearchApiKey}
+            onChange={(value) => updateSetting("localWebSearchApiKey", value)}
+            placeholder={provider === "firecrawl" ? "fc-..." : "pplx-..."}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 /** Main section component for local services */
 export function LocalServicesSection() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -284,6 +348,8 @@ export function LocalServicesSection() {
           />
         ))}
       </div>
+
+      <LocalWebSearchSettings />
     </div>
   );
 }
