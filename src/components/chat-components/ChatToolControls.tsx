@@ -11,7 +11,7 @@ import {
 import { ChainType } from "@/chainFactory";
 import { cn } from "@/lib/utils";
 import { updateSetting } from "@/settings/model";
-import { isPlusChain } from "@/utils";
+import { isPlusChain, supportsChatToolControls } from "@/utils";
 
 interface ChatToolControlsProps {
   // Tool toggle states
@@ -48,7 +48,9 @@ const ChatToolControls: React.FC<ChatToolControlsProps> = ({
   currentChain,
 }) => {
   const isCopilotPlus = isPlusChain(currentChain);
+  const supportsTools = supportsChatToolControls(currentChain);
   const showAutonomousAgent = isCopilotPlus && currentChain !== ChainType.PROJECT_CHAIN;
+  const toolsDisabledByAutonomousAgent = showAutonomousAgent && autonomousAgentToggle;
 
   const handleAutonomousAgentToggle = () => {
     const newValue = !autonomousAgentToggle;
@@ -83,8 +85,8 @@ const ChatToolControls: React.FC<ChatToolControlsProps> = ({
     }
   };
 
-  // If not Copilot Plus, don't show any tools
-  if (!isCopilotPlus) {
+  // Local Codex tools can show explicit tool toggles without enabling Plus-only features.
+  if (!supportsTools) {
     return null;
   }
 
@@ -115,7 +117,7 @@ const ChatToolControls: React.FC<ChatToolControlsProps> = ({
         )}
 
         {/* Toggle buttons for vault, web search, and composer - show when Autonomous Agent is off */}
-        {!autonomousAgentToggle && (
+        {!toolsDisabledByAutonomousAgent && (
           <>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -198,7 +200,7 @@ const ChatToolControls: React.FC<ChatToolControlsProps> = ({
             )}
 
             {/* Tool options - show when Autonomous Agent is off */}
-            {!autonomousAgentToggle && (
+            {!toolsDisabledByAutonomousAgent && (
               <>
                 <DropdownMenuItem
                   onClick={handleVaultToggle}
@@ -237,7 +239,7 @@ const ChatToolControls: React.FC<ChatToolControlsProps> = ({
             )}
 
             {/* Tool options - show when Autonomous Agent is on (disabled) */}
-            {autonomousAgentToggle && (
+            {toolsDisabledByAutonomousAgent && (
               <>
                 <DropdownMenuItem
                   disabled

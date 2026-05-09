@@ -239,6 +239,7 @@ export function ChatControls({
             <Button variant="ghost2" size="fit" className="tw-ml-1 tw-text-sm tw-text-muted">
               {selectedChain === ChainType.LLM_CHAIN && "chat (free)"}
               {selectedChain === ChainType.VAULT_QA_CHAIN && "vault QA (free)"}
+              {selectedChain === ChainType.DESKTOP_CODEX_CLI_TOOLS && "codex tools (local)"}
               {selectedChain === ChainType.COPILOT_PLUS_CHAIN && (
                 <div className="tw-flex tw-items-center tw-gap-1">
                   <Sparkles className="tw-size-4" />
@@ -263,6 +264,13 @@ export function ChatControls({
               }}
             >
               vault QA (free)
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => {
+                handleModeChange(ChainType.DESKTOP_CODEX_CLI_TOOLS);
+              }}
+            >
+              codex tools (local)
             </DropdownMenuItem>
             {isPlusUser ? (
               <DropdownMenuItem

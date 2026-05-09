@@ -14,6 +14,7 @@ interface AtMentionTypeaheadProps {
   onClose: () => void;
   onSelect: (category: AtMentionCategory, data: any) => void;
   isCopilotPlus?: boolean;
+  showTools?: boolean;
   currentActiveFile?: TFile | null;
 }
 
@@ -31,6 +32,7 @@ export function AtMentionTypeahead({
   onClose,
   onSelect,
   isCopilotPlus = false,
+  showTools = isCopilotPlus,
   currentActiveFile = null,
 }: AtMentionTypeaheadProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,7 +44,7 @@ export function AtMentionTypeahead({
     mode: "category",
   });
 
-  const availableCategoryOptions = useAtMentionCategories(isCopilotPlus);
+  const availableCategoryOptions = useAtMentionCategories(isCopilotPlus, showTools);
 
   // Get search results based on current state using unified search
   const searchResults = useAtMentionSearch(
@@ -50,6 +52,7 @@ export function AtMentionTypeahead({
     extendedState.mode,
     extendedState.selectedCategory,
     isCopilotPlus,
+    showTools,
     availableCategoryOptions,
     currentActiveFile
   );

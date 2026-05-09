@@ -54,19 +54,23 @@ export const CATEGORY_OPTIONS: CategoryOption[] = [
 ];
 
 /**
- * Hook that provides available @ mention categories based on Copilot Plus status.
+ * Hook that provides available @ mention categories based on feature support.
  * Returns the array of available category options directly.
  * Web Tabs category is only available on desktop (Web Viewer not supported on mobile).
  *
  * @param isCopilotPlus - Whether Copilot Plus features are enabled
+ * @param showTools - Whether tool mentions should be shown
  * @returns Array of CategoryOption objects
  */
-export function useAtMentionCategories(isCopilotPlus: boolean = false): CategoryOption[] {
+export function useAtMentionCategories(
+  isCopilotPlus: boolean = false,
+  showTools: boolean = isCopilotPlus
+): CategoryOption[] {
   return useMemo(() => {
     return CATEGORY_OPTIONS.filter((cat) => {
-      // Tools require Copilot Plus
+      // Tools can be shown for Plus chains or local tool-capable chains.
       if (cat.category === "tools") {
-        return isCopilotPlus;
+        return showTools;
       }
       // Web Tabs only available on desktop (Web Viewer not supported on mobile)
       if (cat.category === "webTabs") {
@@ -74,5 +78,5 @@ export function useAtMentionCategories(isCopilotPlus: boolean = false): Category
       }
       return true;
     });
-  }, [isCopilotPlus]);
+  }, [showTools]);
 }

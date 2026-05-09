@@ -11,6 +11,7 @@ import {
   AutonomousAgentChainRunner,
   ChainRunner,
   CopilotPlusChainRunner,
+  DesktopCodexCliToolsChainRunner,
   LLMChainRunner,
   ProjectChainRunner,
   VaultQAChainRunner,
@@ -265,6 +266,17 @@ export default class ChainManager {
         break;
       }
 
+      case ChainType.DESKTOP_CODEX_CLI_TOOLS: {
+        this.chain = ChainFactory.createNewLLMChain({
+          llm: chatModel,
+          memory: memory,
+          prompt: options.prompt || chatPrompt,
+          abortController: options.abortController,
+        }) as RunnableSequence;
+        setChainType(ChainType.DESKTOP_CODEX_CLI_TOOLS);
+        break;
+      }
+
       case ChainType.PROJECT_CHAIN: {
         // For initial load of the plugin
         await this.initializeQAChain(options);
@@ -299,6 +311,8 @@ export default class ChainManager {
           return new AutonomousAgentChainRunner(this);
         }
         return new CopilotPlusChainRunner(this);
+      case ChainType.DESKTOP_CODEX_CLI_TOOLS:
+        return new DesktopCodexCliToolsChainRunner(this);
       case ChainType.PROJECT_CHAIN:
         return new ProjectChainRunner(this);
       default:

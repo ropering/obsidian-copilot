@@ -63,6 +63,7 @@ interface LexicalEditorProps {
   onImagePaste?: (files: File[]) => void;
   onTagSelected?: () => void;
   isCopilotPlus?: boolean;
+  showTools?: boolean;
   currentActiveFile?: TFile | null;
   currentChain?: ChainType;
 }
@@ -92,6 +93,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
   onImagePaste,
   onTagSelected,
   isCopilotPlus = false,
+  showTools = isCopilotPlus,
   currentActiveFile = null,
   currentChain,
 }) => {
@@ -212,6 +214,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
           )}
           <AtMentionCommandPlugin
             isCopilotPlus={isCopilotPlus}
+            showTools={showTools}
             currentActiveFile={currentActiveFile}
           />
           <TextInsertionPlugin />
