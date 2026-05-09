@@ -261,6 +261,10 @@ export const stringToChainType = (chain: string): ChainType => {
       return ChainType.VAULT_QA_CHAIN;
     case "copilot_plus":
       return ChainType.COPILOT_PLUS_CHAIN;
+    case "desktop_codex_cli_tools":
+      return ChainType.DESKTOP_CODEX_CLI_TOOLS;
+    case "project":
+      return ChainType.PROJECT_CHAIN;
     default:
       throw new Error(`Unknown chain type: ${chain}`);
   }
@@ -411,6 +415,17 @@ export function isAllowedFileForNoteContext(file: TFile | null): boolean {
  */
 export function isPlusChain(chainType: ChainType): boolean {
   return chainType === ChainType.COPILOT_PLUS_CHAIN || chainType === ChainType.PROJECT_CHAIN;
+}
+
+/**
+ * Checks whether the current chain supports explicit chat tool controls.
+ * This is intentionally broader than isPlusChain so local Codex tools can show
+ * @tools without unlocking Plus-only context features.
+ * @param chainType The chain type to check
+ * @returns true if this chain can accept explicit @tool commands
+ */
+export function supportsChatToolControls(chainType: ChainType): boolean {
+  return isPlusChain(chainType) || chainType === ChainType.DESKTOP_CODEX_CLI_TOOLS;
 }
 
 /**
@@ -1223,6 +1238,7 @@ export function getNeedSetKeyProvider(): Provider[] {
     ChatModelProviders.LM_STUDIO,
     ChatModelProviders.AZURE_OPENAI,
     ChatModelProviders.GITHUB_COPILOT,
+    ChatModelProviders.DESKTOP_CODEX_CLI,
     EmbeddingModelProviders.COPILOT_PLUS,
     EmbeddingModelProviders.COPILOT_PLUS_JINA,
   ];
@@ -1237,6 +1253,10 @@ export function checkModelApiKey(
   hasApiKey: boolean;
   errorNotice?: string;
 } {
+  if (model.provider === ChatModelProviders.DESKTOP_CODEX_CLI) {
+    return { hasApiKey: true };
+  }
+
   if (model.provider === ChatModelProviders.AMAZON_BEDROCK) {
     const apiKey = model.apiKey || settings.amazonBedrockApiKey;
     if (!apiKey) {
