@@ -104,6 +104,7 @@ C:\mnt\google_drive\Obsidian Vault\250216_vault\.obsidian\plugins\copilot
 5. `Local Services > Local Web Search`에서 `@websearch` provider를 설정합니다.
    - 무료/self-host 방식: SearXNG URL을 입력합니다.
    - 외부 API 방식: Firecrawl, Perplexity, Tavily provider를 선택하고 본인 API key를 입력합니다.
+   - Tavily는 기본 `Search Depth=basic`, `Max Results=5`이며 설정 화면에서 변경할 수 있습니다.
 6. 일반 Chat, Vault QA, `codex tools (local)`을 각각 짧게 테스트합니다.
 
 ## 6. 원본 업데이트 반영 방법
@@ -184,6 +185,7 @@ npm run build
 - Local Codex `@websearch`는 Copilot Plus/Brevilabs를 호출하지 않습니다. 별도 Local Web Search 설정만 사용합니다.
 - SearXNG는 API key가 필요 없지만 사용자가 직접 로컬 또는 self-host endpoint를 준비해야 합니다.
 - Firecrawl/Perplexity/Tavily Local Web Search는 사용자의 별도 API key가 필요하며 Plus license key와 무관합니다.
+- Tavily Local Web Search는 `Search Depth`와 `Max Results`만 사용자 설정으로 열고, `include_answer=false`, `include_images=false`를 유지합니다.
 - Codex CLI binary는 `CODEX_CLI_BINARY`, `CODEX_CLI_PATH`, Windows native fallback, `codex` 순서로 찾습니다.
 - 프롬프트는 stdin으로 전달합니다. 긴 RAG 컨텍스트를 argv로 넘기면 Windows에서 `ENAMETOOLONG`이 발생할 수 있습니다.
 - 이미지 첨부는 base64를 프롬프트에 넣지 않고 temp file과 `--image`로 전달해야 합니다.

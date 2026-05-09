@@ -219,6 +219,11 @@ describe("sanitizeSettings - legacy Miyo settings cleanup", () => {
 });
 
 describe("sanitizeSettings - local web search provider", () => {
+  it("uses the default Tavily local web search options", () => {
+    expect(DEFAULT_SETTINGS.localWebSearchTavilySearchDepth).toBe("basic");
+    expect(DEFAULT_SETTINGS.localWebSearchTavilyMaxResults).toBe(5);
+  });
+
   it("preserves Tavily as a valid local web search provider", () => {
     const sanitized = sanitizeSettings({
       ...DEFAULT_SETTINGS,
@@ -235,6 +240,34 @@ describe("sanitizeSettings - local web search provider", () => {
     });
 
     expect(sanitized.localWebSearchProvider).toBe(DEFAULT_SETTINGS.localWebSearchProvider);
+  });
+
+  it("falls back to basic when Tavily search depth is invalid", () => {
+    const sanitized = sanitizeSettings({
+      ...DEFAULT_SETTINGS,
+      localWebSearchTavilySearchDepth: "deep" as any,
+    });
+
+    expect(sanitized.localWebSearchTavilySearchDepth).toBe("basic");
+  });
+
+  it("sanitizes Tavily max results to the supported UI range", () => {
+    const invalid = sanitizeSettings({
+      ...DEFAULT_SETTINGS,
+      localWebSearchTavilyMaxResults: "not-a-number" as any,
+    });
+    const tooLow = sanitizeSettings({
+      ...DEFAULT_SETTINGS,
+      localWebSearchTavilyMaxResults: 0,
+    });
+    const tooHigh = sanitizeSettings({
+      ...DEFAULT_SETTINGS,
+      localWebSearchTavilyMaxResults: 99,
+    });
+
+    expect(invalid.localWebSearchTavilyMaxResults).toBe(5);
+    expect(tooLow.localWebSearchTavilyMaxResults).toBe(1);
+    expect(tooHigh.localWebSearchTavilyMaxResults).toBe(20);
   });
 });
 

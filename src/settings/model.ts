@@ -17,6 +17,17 @@ import {
   SEND_SHORTCUT,
 } from "@/constants";
 
+/** Tavily search depth options supported by the local web search adapter. */
+export const LOCAL_WEB_SEARCH_TAVILY_SEARCH_DEPTHS = [
+  "basic",
+  "fast",
+  "ultra-fast",
+  "advanced",
+] as const;
+
+export type LocalWebSearchTavilySearchDepth =
+  (typeof LOCAL_WEB_SEARCH_TAVILY_SEARCH_DEPTHS)[number];
+
 /**
  * We used to store commands in the settings file with the following interface.
  * It has been migrated to CustomCommand. This interface is needed to migrate
@@ -158,6 +169,10 @@ export interface CopilotSettings {
   localWebSearchUrl: string;
   /** API key for local web search providers that require one */
   localWebSearchApiKey: string;
+  /** Tavily search depth for local web search */
+  localWebSearchTavilySearchDepth: LocalWebSearchTavilySearchDepth;
+  /** Maximum Tavily results returned for local web search */
+  localWebSearchTavilyMaxResults: number;
   /** Enable lexical boosts (folder and graph) in search - default: true */
   enableLexicalBoosts: boolean;
   /**
@@ -475,6 +490,26 @@ export function sanitizeSettings(settings: CopilotSettings): CopilotSettings {
 
   if (typeof sanitizedSettings.localWebSearchApiKey !== "string") {
     sanitizedSettings.localWebSearchApiKey = DEFAULT_SETTINGS.localWebSearchApiKey;
+  }
+
+  if (
+    !LOCAL_WEB_SEARCH_TAVILY_SEARCH_DEPTHS.includes(
+      sanitizedSettings.localWebSearchTavilySearchDepth
+    )
+  ) {
+    sanitizedSettings.localWebSearchTavilySearchDepth =
+      DEFAULT_SETTINGS.localWebSearchTavilySearchDepth;
+  }
+
+  const tavilyMaxResults = Number(settingsToSanitize.localWebSearchTavilyMaxResults);
+  if (isNaN(tavilyMaxResults)) {
+    sanitizedSettings.localWebSearchTavilyMaxResults =
+      DEFAULT_SETTINGS.localWebSearchTavilyMaxResults;
+  } else {
+    sanitizedSettings.localWebSearchTavilyMaxResults = Math.min(
+      20,
+      Math.max(1, Math.trunc(tavilyMaxResults))
+    );
   }
 
   // Ensure passMarkdownImages has a default value

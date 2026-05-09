@@ -211,9 +211,17 @@ async function perplexitySearch(query: string, apiKey: string): Promise<LocalWeb
  *
  * @param query - Search query.
  * @param apiKey - Tavily API key.
+ * @param settings - Current settings snapshot with Tavily options.
  * @returns Search result content and citations.
  */
-async function tavilySearch(query: string, apiKey: string): Promise<LocalWebSearchResult> {
+async function tavilySearch(
+  query: string,
+  apiKey: string,
+  settings: Pick<
+    CopilotSettings,
+    "localWebSearchTavilySearchDepth" | "localWebSearchTavilyMaxResults"
+  >
+): Promise<LocalWebSearchResult> {
   const startedAt = Date.now();
   const response = await safeFetch(TAVILY_SEARCH_URL, {
     method: "POST",
@@ -223,8 +231,8 @@ async function tavilySearch(query: string, apiKey: string): Promise<LocalWebSear
     },
     body: JSON.stringify({
       query,
-      search_depth: "basic",
-      max_results: 5,
+      search_depth: settings.localWebSearchTavilySearchDepth,
+      max_results: settings.localWebSearchTavilyMaxResults,
       include_answer: false,
       include_images: false,
     }),
@@ -268,7 +276,7 @@ export async function localWebSearch(query: string): Promise<LocalWebSearchResul
     case "perplexity":
       return perplexitySearch(query, await getDecryptedKey(settings.localWebSearchApiKey));
     case "tavily":
-      return tavilySearch(query, await getDecryptedKey(settings.localWebSearchApiKey));
+      return tavilySearch(query, await getDecryptedKey(settings.localWebSearchApiKey), settings);
     case "searxng":
     default:
       return searxngSearch(query, settings.localWebSearchUrl);

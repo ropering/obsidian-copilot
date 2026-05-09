@@ -997,6 +997,8 @@ export const DEFAULT_SETTINGS: CopilotSettings = {
   localWebSearchProvider: "searxng",
   localWebSearchUrl: "",
   localWebSearchApiKey: "",
+  localWebSearchTavilySearchDepth: "basic",
+  localWebSearchTavilyMaxResults: 5,
   enableLexicalBoosts: true,
   suggestedDefaultCommands: false,
   autonomousAgentMaxIterations: 4,

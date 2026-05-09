@@ -179,6 +179,8 @@ describe("localWebSearch", () => {
       localWebSearchProvider: "tavily",
       localWebSearchUrl: "",
       localWebSearchApiKey: "tvly-key",
+      localWebSearchTavilySearchDepth: "advanced",
+      localWebSearchTavilyMaxResults: 7,
     });
     mockSafeFetch.mockResolvedValueOnce(
       mockResponse(200, {
@@ -201,8 +203,8 @@ describe("localWebSearch", () => {
         }),
         body: JSON.stringify({
           query: "query",
-          search_depth: "basic",
-          max_results: 5,
+          search_depth: "advanced",
+          max_results: 7,
           include_answer: false,
           include_images: false,
         }),

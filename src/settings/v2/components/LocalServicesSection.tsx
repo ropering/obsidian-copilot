@@ -9,7 +9,12 @@ import { ChatModelProviders } from "@/constants";
 import type { LocalWebSearchProvider } from "@/LLMProviders/localWebSearch";
 import ProjectManager from "@/LLMProviders/projectManager";
 import { logError } from "@/logger";
-import { updateSetting, useSettingsValue } from "@/settings/model";
+import {
+  LOCAL_WEB_SEARCH_TAVILY_SEARCH_DEPTHS,
+  updateSetting,
+  useSettingsValue,
+  type LocalWebSearchTavilySearchDepth,
+} from "@/settings/model";
 import { err2String } from "@/utils";
 import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { Notice, requestUrl } from "obsidian";
@@ -50,6 +55,18 @@ const LOCAL_WEB_SEARCH_API_KEY_CONFIG: Record<
   perplexity: { title: "Perplexity API Key", placeholder: "pplx-..." },
   tavily: { title: "Tavily API Key", placeholder: "tvly-..." },
 };
+
+const LOCAL_WEB_SEARCH_TAVILY_DEPTH_OPTIONS = LOCAL_WEB_SEARCH_TAVILY_SEARCH_DEPTHS.map(
+  (depth) => ({
+    label: depth,
+    value: depth,
+  })
+);
+
+const LOCAL_WEB_SEARCH_TAVILY_MAX_RESULT_OPTIONS = Array.from({ length: 20 }, (_, index) => ({
+  label: String(index + 1),
+  value: String(index + 1),
+}));
 
 /** Normalize URL: trim, remove trailing slashes and /v1 suffix */
 function normalizeBaseUrl(url: string): string {
@@ -302,6 +319,32 @@ function LocalWebSearchSettings() {
             onChange={(value) => updateSetting("localWebSearchApiKey", value)}
             placeholder={apiKeyConfig.placeholder}
           />
+        )}
+
+        {provider === "tavily" && (
+          <>
+            <SettingItem
+              type="select"
+              title="Search Depth"
+              description="Controls Tavily's relevance, latency, and credit tradeoff for local Codex web search."
+              value={settings.localWebSearchTavilySearchDepth}
+              onChange={(value) =>
+                updateSetting(
+                  "localWebSearchTavilySearchDepth",
+                  value as LocalWebSearchTavilySearchDepth
+                )
+              }
+              options={LOCAL_WEB_SEARCH_TAVILY_DEPTH_OPTIONS}
+            />
+            <SettingItem
+              type="select"
+              title="Max Results"
+              description="Maximum number of Tavily search results to pass to Desktop Codex CLI."
+              value={settings.localWebSearchTavilyMaxResults}
+              onChange={(value) => updateSetting("localWebSearchTavilyMaxResults", Number(value))}
+              options={LOCAL_WEB_SEARCH_TAVILY_MAX_RESULT_OPTIONS}
+            />
+          </>
         )}
       </div>
     </div>
