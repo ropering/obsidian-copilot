@@ -101,7 +101,10 @@ C:\mnt\google_drive\Obsidian Vault\250216_vault\.obsidian\plugins\copilot
 2. 빌드 산출물 3개를 vault의 `.obsidian/plugins/copilot/`에 덮어씁니다.
 3. Obsidian을 다시 열거나 Copilot 플러그인을 재활성화합니다.
 4. Settings에서 `Desktop Codex CLI Chat` 모델이 보이고 선택 가능한지 확인합니다.
-5. 일반 Chat, Vault QA, `codex tools (local)`을 각각 짧게 테스트합니다.
+5. `Local Services > Local Web Search`에서 `@websearch` provider를 설정합니다.
+   - 무료/self-host 방식: SearXNG URL을 입력합니다.
+   - 외부 API 방식: Firecrawl 또는 Perplexity provider를 선택하고 본인 API key를 입력합니다.
+6. 일반 Chat, Vault QA, `codex tools (local)`을 각각 짧게 테스트합니다.
 
 ## 6. 원본 업데이트 반영 방법
 
@@ -166,6 +169,7 @@ npm run build
 - Vault QA에서 긴 검색 컨텍스트가 `ENAMETOOLONG` 없이 처리되는지 확인합니다.
 - 이미지 1개와 2개 이상 첨부 질문이 `input_too_large` 없이 처리되는지 확인합니다.
 - `codex tools (local)`에서 `@vault`, `@composer`, `@memory` 동작을 확인합니다.
+- `codex tools (local)`에서 `@websearch`가 Local Web Search provider를 통해 동작하는지 확인합니다.
 - Plus 라이선스가 없는 상태에서 Plus-only 기능은 기존처럼 차단되는지 확인합니다.
 
 ## 8. 주의점
@@ -177,6 +181,9 @@ npm run build
 - 네트워크 서비스 형태로 수정본을 운영하는 경우에도 사용자가 대응 소스를 받을 수 있어야 합니다.
 - 외부 코드, 이미지, 아이콘, 문서를 추가할 때는 AGPL-3.0과 충돌하지 않는 권한인지 확인합니다.
 - Desktop Codex CLI 기능은 desktop Obsidian 전용입니다. 모바일 Obsidian 지원을 가정하지 않습니다.
+- Local Codex `@websearch`는 Copilot Plus/Brevilabs를 호출하지 않습니다. 별도 Local Web Search 설정만 사용합니다.
+- SearXNG는 API key가 필요 없지만 사용자가 직접 로컬 또는 self-host endpoint를 준비해야 합니다.
+- Firecrawl/Perplexity Local Web Search는 사용자의 별도 API key가 필요하며 Plus license key와 무관합니다.
 - Codex CLI binary는 `CODEX_CLI_BINARY`, `CODEX_CLI_PATH`, Windows native fallback, `codex` 순서로 찾습니다.
 - 프롬프트는 stdin으로 전달합니다. 긴 RAG 컨텍스트를 argv로 넘기면 Windows에서 `ENAMETOOLONG`이 발생할 수 있습니다.
 - 이미지 첨부는 base64를 프롬프트에 넣지 않고 temp file과 `--image`로 전달해야 합니다.
