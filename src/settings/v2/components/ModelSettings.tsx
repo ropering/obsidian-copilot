@@ -5,6 +5,7 @@ import EmbeddingManager from "@/LLMProviders/embeddingManager";
 import ProjectManager from "@/LLMProviders/projectManager";
 import { logError } from "@/logger";
 import { CopilotSettings, setSettings, updateSetting, useSettingsValue } from "@/settings/model";
+import { LocalServicesSection } from "@/settings/v2/components/LocalServicesSection";
 import { ModelAddDialog } from "@/settings/v2/components/ModelAddDialog";
 import { ModelEditModal } from "@/settings/v2/components/ModelEditDialog";
 import { ModelTable } from "@/settings/v2/components/ModelTable";
@@ -217,6 +218,8 @@ export const ModelSettings: React.FC = () => {
           ping={(model) => EmbeddingManager.getInstance().ping(model)}
         />
       </section>
+
+      <LocalServicesSection />
     </div>
   );
 };
