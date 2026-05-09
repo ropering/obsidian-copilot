@@ -1,14 +1,21 @@
 import * as Obsidian from "obsidian";
 import { TFile } from "obsidian";
+import { ChatModelProviders, DEFAULT_SETTINGS } from "./constants";
+import type { CustomModel } from "./aiParams";
 import {
+  checkModelApiKey,
   extractNoteFiles,
   extractTemplateNoteFiles,
+  getNeedSetKeyProvider,
   getNotesFromPath,
   getNotesFromTags,
   getUtf8ByteLength,
   isFolderMatch,
+  isPlusChain,
   processVariableNameForNotePath,
   removeThinkTags,
+  stringToChainType,
+  supportsChatToolControls,
   stripFrontmatter,
   truncateToByteLimit,
   withTimeout,
@@ -96,6 +103,36 @@ const mockApp = {
   vault: new Obsidian.Vault(),
   metadataCache: mockMetadataCache,
 } as any;
+
+describe("checkModelApiKey", () => {
+  it("does not require an API key for Desktop Codex CLI", () => {
+    const model = {
+      name: "Desktop Codex CLI Chat",
+      provider: ChatModelProviders.DESKTOP_CODEX_CLI,
+      enabled: true,
+    } as CustomModel;
+
+    expect(getNeedSetKeyProvider()).not.toContain(ChatModelProviders.DESKTOP_CODEX_CLI);
+    expect(checkModelApiKey(model, DEFAULT_SETTINGS)).toEqual({ hasApiKey: true });
+  });
+});
+
+describe("chain type helpers", () => {
+  it("parses Desktop Codex local tools chain without marking it as Plus", () => {
+    const chainType = stringToChainType("desktop_codex_cli_tools");
+
+    expect(chainType).toBe("desktop_codex_cli_tools");
+    expect(isPlusChain(chainType)).toBe(false);
+    expect(supportsChatToolControls(chainType)).toBe(true);
+  });
+
+  it("keeps Plus chain detection separate from tool-control support", () => {
+    expect(supportsChatToolControls("llm_chain" as any)).toBe(false);
+    expect(supportsChatToolControls("vault_qa" as any)).toBe(false);
+    expect(supportsChatToolControls("copilot_plus" as any)).toBe(true);
+    expect(supportsChatToolControls("project" as any)).toBe(true);
+  });
+});
 
 describe("isFolderMatch", () => {
   it("should return file from the folder name 1", async () => {
