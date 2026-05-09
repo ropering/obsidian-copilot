@@ -182,8 +182,11 @@ npm run build
 - 네트워크 서비스 형태로 수정본을 운영하는 경우에도 사용자가 대응 소스를 받을 수 있어야 합니다.
 - 외부 코드, 이미지, 아이콘, 문서를 추가할 때는 AGPL-3.0과 충돌하지 않는 권한인지 확인합니다.
 - Desktop Codex CLI 기능은 desktop Obsidian 전용입니다. 모바일 Obsidian 지원을 가정하지 않습니다.
+- 새 기능을 추가할 때는 기존 공용 utility를 먼저 찾고, 동일한 포맷/검증/후처리 로직이 있으면 복제 구현보다 참조를 우선합니다.
+- 단, 공용화를 위해 upstream hot file을 직접 추출/리팩터해야 한다면 충돌 위험을 먼저 평가하고, 가능하면 커스텀 adapter 파일에서 얇게 참조합니다.
 - Desktop Codex CLI prompt는 공통 system prompt, `codex tools (local)` 전용 instruction, Codex CLI transport wrapper 순서로 구성됩니다.
 - `codex tools (local)` instruction은 Plus prompt의 source/citation integrity 원칙만 local pre-executed tool 방식에 맞춰 반영하며, Plus runner를 직접 호출하지 않습니다.
+- Local Codex tool result formatting은 `renderCiCMessage`, `injectGuidanceBeforeUserQuery`, citation utility 같은 기존 공용 helper를 우선 사용합니다.
 - Local Codex `@websearch`는 Copilot Plus/Brevilabs를 호출하지 않습니다. 별도 Local Web Search 설정만 사용합니다.
 - SearXNG는 API key가 필요 없지만 사용자가 직접 로컬 또는 self-host endpoint를 준비해야 합니다.
 - Firecrawl/Perplexity/Tavily Local Web Search는 사용자의 별도 API key가 필요하며 Plus license key와 무관합니다.

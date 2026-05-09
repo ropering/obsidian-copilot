@@ -13,6 +13,8 @@ import type { ChatMessage, ResponseMetadata } from "@/types/message";
 import { extractTextFromChunk, findCustomModel, withSuppressedTokenWarnings } from "@/utils";
 import { BaseChainRunner } from "./BaseChainRunner";
 import { loadAndAddChatHistory } from "./utils/chatHistoryUtils";
+import { getWebSearchCitationInstructions } from "./utils/citationUtils";
+import { injectGuidanceBeforeUserQuery, renderCiCMessage } from "./utils/cicPromptUtils";
 import { recordPromptPayload } from "./utils/promptPayloadRecorder";
 import { ThinkBlockStreamer } from "./utils/ThinkBlockStreamer";
 
@@ -56,7 +58,7 @@ Do not use Copilot Plus, Brevilabs, or any remote tool gateway.
 
 ## Response Policy
 - Return the final user-facing answer only.
-- Do not expose raw <tool_result> XML, JSON payloads, or process logs unless the user explicitly asks to inspect them.`;
+- Do not expose raw tool XML, JSON payloads, or process logs unless the user explicitly asks to inspect them.`;
 
 const LOCAL_CODEX_COMPOSER_INSTRUCTIONS = `When @composer is present, you may request local file changes with these XML blocks.
 
@@ -129,6 +131,55 @@ export function extractLocalCodexSalientTerms(query: string): string[] {
 }
 
 /**
+ * Wraps one local Codex tool result using the same XML shape as Plus tool context.
+ *
+ * @param result - Tool result collected before invoking Codex.
+ * @returns XML-wrapped tool result content.
+ */
+function wrapLocalCodexToolResult(result: LocalCodexToolResult): string {
+  const content = result.isError ? `ERROR: ${result.output}` : result.output;
+  return `<${result.tool}>\n${content}\n</${result.tool}>`;
+}
+
+/**
+ * Ensures user content has the same query label used by LayerToMessagesConverter.
+ *
+ * @param content - Base user content.
+ * @returns User content with a `[User query]:` label when missing.
+ */
+function ensureLocalCodexUserQueryLabel(content: string): string {
+  const userQueryLabel = "[User query]:";
+  if (content.includes(userQueryLabel)) {
+    return content;
+  }
+
+  const trimmedContent = content.trim();
+  return trimmedContent ? `${userQueryLabel}\n${trimmedContent}` : userQueryLabel;
+}
+
+/**
+ * Returns web citation guidance when a successful local web search result is present.
+ *
+ * @param results - Tool results collected before invoking Codex.
+ * @param enableInlineCitations - Whether inline citations are enabled in settings.
+ * @returns Web citation guidance, or an empty string when not applicable.
+ */
+function getLocalCodexWebCitationGuidance(
+  results: LocalCodexToolResult[],
+  enableInlineCitations: boolean
+): string {
+  const hasSuccessfulWebSearch = results.some(
+    (result) => result.tool === "webSearch" && !result.isError
+  );
+
+  if (!hasSuccessfulWebSearch) {
+    return "";
+  }
+
+  return getWebSearchCitationInstructions(enableInlineCitations);
+}
+
+/**
  * Builds a stable tool-result prompt section for the Codex CLI request.
  *
  * @param results - Tool results collected before invoking Codex.
@@ -139,14 +190,42 @@ export function formatLocalCodexToolResults(results: LocalCodexToolResult[]): st
     return "";
   }
 
-  const rendered = results
-    .map((result) => {
-      const status = result.isError ? ' status="error"' : "";
-      return `<tool_result name="${result.tool}"${status}>\n${result.output}\n</tool_result>`;
-    })
-    .join("\n\n");
+  const rendered = results.map(wrapLocalCodexToolResult).join("\n\n");
 
-  return `# Local tool results\n\n${rendered}`;
+  return `# Additional context:\n\n${rendered}`;
+}
+
+/**
+ * Builds the local Codex user payload with context first and user query last.
+ *
+ * @param baseUserContent - User message content produced by the layer converter.
+ * @param toolResults - Local tool results to inject.
+ * @param includeComposerInstructions - Whether composer XML instructions are needed.
+ * @param enableInlineCitations - Whether inline citations are enabled in settings.
+ * @returns Final user content for the Codex CLI request.
+ */
+export function buildLocalCodexUserContent(
+  baseUserContent: string,
+  toolResults: LocalCodexToolResult[],
+  includeComposerInstructions: boolean,
+  enableInlineCitations: boolean
+): string {
+  const localToolResults = formatLocalCodexToolResults(toolResults);
+  const composerInstructions = includeComposerInstructions
+    ? `# Local composer instructions\n\n${LOCAL_CODEX_COMPOSER_INSTRUCTIONS}`
+    : "";
+  const contextSection = [localToolResults, composerInstructions].filter(Boolean).join("\n\n");
+
+  if (!contextSection) {
+    return baseUserContent;
+  }
+
+  const userContentWithLabel = ensureLocalCodexUserQueryLabel(baseUserContent);
+  const contextFirstPayload = renderCiCMessage(contextSection, userContentWithLabel);
+  return injectGuidanceBeforeUserQuery(
+    contextFirstPayload,
+    getLocalCodexWebCitationGuidance(toolResults, enableInlineCitations)
+  );
 }
 
 /**
@@ -403,13 +482,12 @@ export class DesktopCodexCliToolsChainRunner extends BaseChainRunner {
 
     const userMessageContent = baseMessages.find((message) => message.role === "user");
     if (userMessageContent) {
-      const localToolResults = formatLocalCodexToolResults(toolResults);
-      const composerInstructions = includeComposerInstructions
-        ? `\n\n# Local composer instructions\n\n${LOCAL_CODEX_COMPOSER_INSTRUCTIONS}`
-        : "";
-      const augmentedText = [userMessageContent.content, localToolResults, composerInstructions]
-        .filter(Boolean)
-        .join("\n\n");
+      const augmentedText = buildLocalCodexUserContent(
+        userMessageContent.content,
+        toolResults,
+        includeComposerInstructions,
+        getSettings().enableInlineCitations
+      );
 
       if (userMessage.content && Array.isArray(userMessage.content)) {
         const updatedContent = userMessage.content.map((item: any) => {

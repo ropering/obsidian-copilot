@@ -1,6 +1,7 @@
 import { ChatModelProviders } from "@/constants";
 import {
   LOCAL_CODEX_SYSTEM_INSTRUCTIONS,
+  buildLocalCodexUserContent,
   createLocalWebSearchUnavailableResult,
   extractLocalCodexSalientTerms,
   formatLocalCodexToolResults,
@@ -72,12 +73,46 @@ describe("DesktopCodexCliToolsChainRunner helpers", () => {
   });
 
   it("formats local tool results for prompt injection", () => {
-    expect(
-      formatLocalCodexToolResults([
-        { tool: "localSearch", output: "note result" },
-        { tool: "webSearch", output: "local web search is not configured", isError: true },
-      ])
-    ).toContain('<tool_result name="webSearch" status="error">');
+    const formatted = formatLocalCodexToolResults([
+      { tool: "localSearch", output: "note result" },
+      { tool: "webSearch", output: "local web search is not configured", isError: true },
+    ]);
+
+    expect(formatted).toContain("# Additional context:");
+    expect(formatted).toContain("<localSearch>\nnote result\n</localSearch>");
+    expect(formatted).toContain(
+      "<webSearch>\nERROR: local web search is not configured\n</webSearch>"
+    );
+    expect(formatted).not.toContain("<tool_result");
+  });
+
+  it("builds local tool context before the user query with web citation guidance", () => {
+    const content = buildLocalCodexUserContent(
+      "What changed recently?",
+      [
+        {
+          tool: "webSearch",
+          output: JSON.stringify([
+            {
+              type: "web_search",
+              content: "Search result",
+              citations: [{ title: "Example", url: "https://example.com" }],
+            },
+          ]),
+        },
+      ],
+      false,
+      true
+    );
+
+    expect(content.indexOf("# Additional context:")).toBeLessThan(content.indexOf("[User query]:"));
+    expect(content).toContain("<webSearch>");
+    expect(content).toContain("WEB CITATION RULES");
+    expect(content).toContain("[User query]:\nWhat changed recently?");
+  });
+
+  it("leaves plain user content unchanged when no local context exists", () => {
+    expect(buildLocalCodexUserContent("Plain question", [], false, true)).toBe("Plain question");
   });
 
   it("uses local pre-executed tool guidance with source and citation integrity", () => {
@@ -92,6 +127,7 @@ describe("DesktopCodexCliToolsChainRunner helpers", () => {
     );
     expect(LOCAL_CODEX_SYSTEM_INSTRUCTIONS).not.toContain("MUST call webSearch");
     expect(LOCAL_CODEX_SYSTEM_INSTRUCTIONS).not.toContain("native function calling");
+    expect(LOCAL_CODEX_SYSTEM_INSTRUCTIONS).not.toContain("raw <tool_result> XML");
   });
 
   it("uses a local-only web-search unavailable result", () => {
