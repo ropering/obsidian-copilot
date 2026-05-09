@@ -107,7 +107,106 @@ C:\mnt\google_drive\Obsidian Vault\250216_vault\.obsidian\plugins\copilot
    - Tavily는 기본 `Search Depth=basic`, `Max Results=5`이며 설정 화면에서 변경할 수 있습니다.
 6. 일반 Chat, Vault QA, `codex tools (local)`을 각각 짧게 테스트합니다.
 
-## 6. 원본 업데이트 반영 방법
+## 6. Desktop Codex CLI 기능 사용법
+
+### 6.1 사전 조건
+
+- Desktop Obsidian에서만 사용합니다. 모바일 Obsidian은 지원하지 않습니다.
+- 로컬 환경에 Codex CLI가 설치되어 있고 로그인되어 있어야 합니다.
+- Obsidian이 Codex CLI binary를 찾을 수 있어야 합니다. 탐색 순서는 `CODEX_CLI_BINARY`, `CODEX_CLI_PATH`, Windows native fallback, `codex`입니다.
+- `Desktop Codex CLI Chat` 모델은 별도 LLM API key를 요구하지 않습니다. Codex CLI의 로컬 설정과 로그인 상태를 사용합니다.
+
+### 6.2 `Desktop Codex CLI Chat` 모델
+
+`Desktop Codex CLI Chat`은 Obsidian Copilot의 일반 chat model로 노출되는 로컬 Codex CLI provider입니다.
+
+동작 방식:
+
+- Obsidian/LangChain 메시지를 Codex CLI용 transcript prompt로 변환합니다.
+- `codex exec`를 vault root에서 `read-only`, `ephemeral` 방식으로 실행합니다.
+- `--model`, `--profile`은 넘기지 않고 사용자의 Codex CLI 기본 설정을 따릅니다.
+- 응답은 token 단위 streaming이 아니라 Codex CLI 실행이 끝난 뒤 최종 답변을 한 번에 표시합니다.
+- 이미지 첨부는 base64를 prompt에 넣지 않고 temp image file로 저장한 뒤 `--image <file>`로 전달합니다.
+
+권장 사용처:
+
+- 일반 Chat에서 로컬 Codex CLI를 LLM backend로 사용
+- Vault QA에서 긴 RAG context를 Codex CLI로 질의
+- 이미지 1개 또는 여러 개를 첨부한 질문
+
+질문 예시:
+
+```text
+이 vault의 맥락 없이, Desktop Codex CLI Chat이 정상 작동하는지 짧게 답변해줘.
+```
+
+```text
+첨부한 이미지 2개를 비교해서 차이점을 표로 정리해줘.
+```
+
+Vault QA 예시:
+
+```text
+내 vault에서 최근 정리한 Codex CLI 관련 내용을 찾아 핵심 결정사항과 남은 작업을 요약해줘.
+```
+
+### 6.3 `codex tools (local)` 모드
+
+`codex tools (local)`은 Copilot Plus 라이선스나 Brevilabs gateway를 사용하지 않는 별도 local tools mode입니다. 현재 선택된 chat model이 반드시 `Desktop Codex CLI Chat`이어야 합니다.
+
+동작 방식:
+
+- 사용자가 명시한 `@` 도구만 Codex CLI 호출 전에 사전 실행합니다.
+- 실행된 tool 결과를 `# Additional context:` 아래에 배치하고, 실제 사용자 질문은 마지막 `[User query]:` 아래에 둡니다.
+- `@websearch` 결과가 있으면 기존 citation utility를 사용해 web citation instruction을 추가합니다.
+- native tool calling, autonomous agent loop, Copilot Plus runner 직접 호출은 사용하지 않습니다.
+
+지원 도구:
+
+- `@vault`: 기존 local vault search tool을 실행하고 결과를 Codex CLI context로 전달합니다.
+- `@websearch` 또는 `@web`: `Local Services > Local Web Search` 설정을 사용합니다. Copilot Plus/Brevilabs는 호출하지 않습니다.
+- `@composer`: Codex가 제안한 `writeFile`/`editFile` XML block을 기존 composer preview tool로 처리합니다.
+- `@memory`: Saved Memory가 켜져 있을 때 memory tool을 실행합니다.
+
+설정 절차:
+
+1. Chat model을 `Desktop Codex CLI Chat`으로 선택합니다.
+2. 기능 선택 목록에서 `codex tools (local)`을 선택합니다.
+3. 웹 검색을 쓰려면 `Local Services > Local Web Search`에서 provider를 설정합니다.
+   - SearXNG: local/self-host endpoint 필요, API key 없음
+   - Firecrawl/Perplexity/Tavily: 사용자 API key 필요
+   - Tavily: `Search Depth`와 `Max Results`를 설정 화면에서 조정 가능
+4. 출처 footnote 표시를 원하면 `QA Settings > Enable Inline Citations (experimental)`을 켭니다.
+
+질문 예시:
+
+```text
+@vault 내 노트에서 Desktop Codex CLI와 관련된 내용을 찾아서 현재 구현 상태와 리스크를 정리해줘.
+```
+
+```text
+@websearch 최근 Obsidian AI 플러그인 동향을 찾아서 핵심 변화와 참고 출처를 함께 요약해줘.
+```
+
+```text
+@vault @websearch 내 노트에 정리된 Copilot 커스텀 방향과 최근 웹 검색 결과를 비교해서 다음 개발 우선순위를 제안해줘.
+```
+
+```text
+@composer README-FORK-MAINTENANCE.md에 Local Codex 수동 테스트 항목을 짧게 추가하는 변경안을 만들어줘.
+```
+
+```text
+@memory 앞으로 이 프로젝트에서는 upstream 충돌을 줄이기 위해 기존 공용 utility를 먼저 찾는 원칙을 기억해줘.
+```
+
+문제 확인 예시:
+
+- `@websearch`에서 "local web search is not configured"가 나오면 `Local Services > Local Web Search` provider, endpoint, API key를 확인합니다.
+- `codex tools (local) requires the selected chat model...` 오류가 나오면 chat model이 `Desktop Codex CLI Chat`인지 확인합니다.
+- 응답이 늦게 보이는 것은 token streaming이 아니라 Codex CLI 완료 후 단일 chunk로 표시되는 현재 v1 동작입니다.
+
+## 7. 원본 업데이트 반영 방법
 
 작업 브랜치가 깨끗한 상태인지 먼저 확인합니다.
 
@@ -152,7 +251,7 @@ git rebase --continue
 
 rebase가 끝난 뒤 반드시 테스트를 다시 실행합니다.
 
-## 7. 검증 체크리스트
+## 8. 검증 체크리스트
 
 Codex 관련 변경 후 최소 검증:
 
@@ -173,7 +272,7 @@ npm run build
 - `codex tools (local)`에서 `@websearch`가 Local Web Search provider를 통해 동작하는지 확인합니다.
 - Plus 라이선스가 없는 상태에서 Plus-only 기능은 기존처럼 차단되는지 확인합니다.
 
-## 8. 주의점
+## 9. 주의점
 
 - 원본 라이선스는 AGPL-3.0입니다. public fork와 수정본 배포는 가능하지만, 수정본 전체를 AGPL-3.0 조건으로 유지해야 합니다.
 - 원본의 copyright, license, no warranty 고지를 제거하지 않습니다.
@@ -199,7 +298,7 @@ npm run build
 - upstream rebase 후 settings migration, built-in model 병합, model selector disabled 상태를 반드시 확인합니다.
 - 원본이 같은 파일을 크게 바꾼 경우, 커스텀 코드를 새 파일로 다시 격리할 수 있는지 먼저 검토합니다.
 
-## 9. Push 절차
+## 10. Push 절차
 
 검증이 끝나면 feature branch를 fork remote로 push합니다.
 
