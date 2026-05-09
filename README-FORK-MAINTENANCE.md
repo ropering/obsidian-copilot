@@ -170,6 +170,12 @@ npm run build
 
 ## 8. 주의점
 
+- 원본 라이선스는 AGPL-3.0입니다. public fork와 수정본 배포는 가능하지만, 수정본 전체를 AGPL-3.0 조건으로 유지해야 합니다.
+- 원본의 copyright, license, no warranty 고지를 제거하지 않습니다.
+- 수정한 사실과 변경 이력을 커밋/문서/릴리스 노트 등으로 명확히 남깁니다.
+- `main.js` 같은 빌드 산출물을 배포할 때는 같은 버전의 대응 소스도 GitHub branch/tag로 접근 가능해야 합니다.
+- 네트워크 서비스 형태로 수정본을 운영하는 경우에도 사용자가 대응 소스를 받을 수 있어야 합니다.
+- 외부 코드, 이미지, 아이콘, 문서를 추가할 때는 AGPL-3.0과 충돌하지 않는 권한인지 확인합니다.
 - Desktop Codex CLI 기능은 desktop Obsidian 전용입니다. 모바일 Obsidian 지원을 가정하지 않습니다.
 - Codex CLI binary는 `CODEX_CLI_BINARY`, `CODEX_CLI_PATH`, Windows native fallback, `codex` 순서로 찾습니다.
 - 프롬프트는 stdin으로 전달합니다. 긴 RAG 컨텍스트를 argv로 넘기면 Windows에서 `ENAMETOOLONG`이 발생할 수 있습니다.
