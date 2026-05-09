@@ -82,6 +82,22 @@ describe("localWebSearch", () => {
         localWebSearchApiKey: "",
       } as any)
     ).toBe(false);
+
+    expect(
+      hasLocalWebSearchConfig({
+        localWebSearchProvider: "tavily",
+        localWebSearchUrl: "",
+        localWebSearchApiKey: "tvly-key",
+      } as any)
+    ).toBe(true);
+
+    expect(
+      hasLocalWebSearchConfig({
+        localWebSearchProvider: "tavily",
+        localWebSearchUrl: "",
+        localWebSearchApiKey: "",
+      } as any)
+    ).toBe(false);
   });
 
   it("searches SearXNG with JSON format and formats results", async () => {
@@ -156,5 +172,45 @@ describe("localWebSearch", () => {
     );
     expect(result.content).toBe("Sonar answer");
     expect(result.citations).toEqual(["https://source.test"]);
+  });
+
+  it("searches Tavily with the local web search API key and formats results", async () => {
+    mockGetSettings.mockReturnValue({
+      localWebSearchProvider: "tavily",
+      localWebSearchUrl: "",
+      localWebSearchApiKey: "tvly-key",
+    });
+    mockSafeFetch.mockResolvedValueOnce(
+      mockResponse(200, {
+        results: [
+          { title: "Tavily One", content: "First Tavily result", url: "https://tavily.test/1" },
+          { title: "Tavily Two", content: "Second Tavily result", url: "https://tavily.test/2" },
+        ],
+      })
+    );
+
+    const result = await localWebSearch("query");
+
+    expect(mockSafeFetch).toHaveBeenCalledWith(
+      "https://api.tavily.com/search",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer tvly-key",
+          "Content-Type": "application/json",
+        }),
+        body: JSON.stringify({
+          query: "query",
+          search_depth: "basic",
+          max_results: 5,
+          include_answer: false,
+          include_images: false,
+        }),
+        throwOnHttpError: false,
+      })
+    );
+    expect(result.content).toContain("### Tavily One");
+    expect(result.content).toContain("First Tavily result");
+    expect(result.citations).toEqual(["https://tavily.test/1", "https://tavily.test/2"]);
   });
 });

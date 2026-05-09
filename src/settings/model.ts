@@ -153,7 +153,7 @@ export interface CopilotSettings {
   /** Supadata API key for self-host YouTube transcripts */
   supadataApiKey: string;
   /** Provider used by Desktop Codex local tools for web search */
-  localWebSearchProvider: "searxng" | "firecrawl" | "perplexity";
+  localWebSearchProvider: "searxng" | "firecrawl" | "perplexity" | "tavily";
   /** Base URL for keyless local SearXNG web search */
   localWebSearchUrl: string;
   /** API key for local web search providers that require one */
@@ -460,7 +460,7 @@ export function sanitizeSettings(settings: CopilotSettings): CopilotSettings {
     sanitizedSettings.selfHostSearchProvider = DEFAULT_SETTINGS.selfHostSearchProvider;
   }
 
-  const validLocalWebSearchProviders = ["searxng", "firecrawl", "perplexity"] as const;
+  const validLocalWebSearchProviders = ["searxng", "firecrawl", "perplexity", "tavily"] as const;
   if (
     !validLocalWebSearchProviders.includes(
       sanitizedSettings.localWebSearchProvider as (typeof validLocalWebSearchProviders)[number]

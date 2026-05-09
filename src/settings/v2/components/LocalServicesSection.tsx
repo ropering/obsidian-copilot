@@ -39,7 +39,17 @@ const LOCAL_WEB_SEARCH_PROVIDER_OPTIONS: Array<{
   { label: "SearXNG (no API key)", value: "searxng" },
   { label: "Firecrawl", value: "firecrawl" },
   { label: "Perplexity Sonar", value: "perplexity" },
+  { label: "Tavily", value: "tavily" },
 ];
+
+const LOCAL_WEB_SEARCH_API_KEY_CONFIG: Record<
+  Exclude<LocalWebSearchProvider, "searxng">,
+  { title: string; placeholder: string }
+> = {
+  firecrawl: { title: "Firecrawl API Key", placeholder: "fc-..." },
+  perplexity: { title: "Perplexity API Key", placeholder: "pplx-..." },
+  tavily: { title: "Tavily API Key", placeholder: "tvly-..." },
+};
 
 /** Normalize URL: trim, remove trailing slashes and /v1 suffix */
 function normalizeBaseUrl(url: string): string {
@@ -248,6 +258,7 @@ function LocalServiceItem({ service, expanded, onToggleExpand }: LocalServiceIte
 function LocalWebSearchSettings() {
   const settings = useSettingsValue();
   const provider = settings.localWebSearchProvider;
+  const apiKeyConfig = provider === "searxng" ? null : LOCAL_WEB_SEARCH_API_KEY_CONFIG[provider];
 
   return (
     <div className="tw-mt-6 tw-border-t tw-border-border tw-pt-4">
@@ -282,14 +293,14 @@ function LocalWebSearchSettings() {
           />
         )}
 
-        {provider !== "searxng" && (
+        {apiKeyConfig && (
           <SettingItem
             type="password"
-            title={provider === "firecrawl" ? "Firecrawl API Key" : "Perplexity API Key"}
+            title={apiKeyConfig.title}
             description="Your own API key for local Codex web search. This is separate from Copilot Plus settings."
             value={settings.localWebSearchApiKey}
             onChange={(value) => updateSetting("localWebSearchApiKey", value)}
-            placeholder={provider === "firecrawl" ? "fc-..." : "pplx-..."}
+            placeholder={apiKeyConfig.placeholder}
           />
         )}
       </div>

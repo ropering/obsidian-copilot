@@ -5,8 +5,9 @@ import { safeFetch } from "@/utils";
 
 const FIRECRAWL_SEARCH_URL = "https://api.firecrawl.dev/v2/search";
 const PERPLEXITY_CHAT_URL = "https://api.perplexity.ai/chat/completions";
+const TAVILY_SEARCH_URL = "https://api.tavily.com/search";
 
-export type LocalWebSearchProvider = "searxng" | "firecrawl" | "perplexity";
+export type LocalWebSearchProvider = "searxng" | "firecrawl" | "perplexity" | "tavily";
 
 export interface LocalWebSearchResult {
   content: string;
@@ -24,6 +25,12 @@ interface SearxngSearchResult {
   content?: string;
   url?: string;
   engine?: string;
+}
+
+interface TavilySearchResult {
+  title?: string;
+  content?: string;
+  url?: string;
 }
 
 interface FormattedSearchResult {
@@ -54,6 +61,7 @@ export function hasLocalWebSearchConfig(settings: Readonly<CopilotSettings> = ge
       return normalizeServiceUrl(settings.localWebSearchUrl).length > 0;
     case "firecrawl":
     case "perplexity":
+    case "tavily":
       return settings.localWebSearchApiKey.trim().length > 0;
     default:
       return false;
@@ -199,6 +207,54 @@ async function perplexitySearch(query: string, apiKey: string): Promise<LocalWeb
 }
 
 /**
+ * Search with Tavily using the user's local web search API key.
+ *
+ * @param query - Search query.
+ * @param apiKey - Tavily API key.
+ * @returns Search result content and citations.
+ */
+async function tavilySearch(query: string, apiKey: string): Promise<LocalWebSearchResult> {
+  const startedAt = Date.now();
+  const response = await safeFetch(TAVILY_SEARCH_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query,
+      search_depth: "basic",
+      max_results: 5,
+      include_answer: false,
+      include_images: false,
+    }),
+    throwOnHttpError: false,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Tavily search failed (${response.status}): ${text}`);
+  }
+
+  const json = await response.json();
+  const results: TavilySearchResult[] = Array.isArray(json?.results) ? json.results : [];
+  const citations = results.map((item) => item.url).filter((url): url is string => Boolean(url));
+  const elapsed = Date.now() - startedAt;
+  logInfo(`[localWebSearch] Tavily: ${results.length} results in ${elapsed}ms`);
+
+  return {
+    content: formatSearchResults(
+      results.map((item) => ({
+        title: item.title,
+        snippet: item.content,
+        url: item.url,
+      }))
+    ),
+    citations,
+  };
+}
+
+/**
  * Run local web search through the provider selected in settings.
  *
  * @param query - Search query.
@@ -211,6 +267,8 @@ export async function localWebSearch(query: string): Promise<LocalWebSearchResul
       return firecrawlSearch(query, await getDecryptedKey(settings.localWebSearchApiKey));
     case "perplexity":
       return perplexitySearch(query, await getDecryptedKey(settings.localWebSearchApiKey));
+    case "tavily":
+      return tavilySearch(query, await getDecryptedKey(settings.localWebSearchApiKey));
     case "searxng":
     default:
       return searxngSearch(query, settings.localWebSearchUrl);

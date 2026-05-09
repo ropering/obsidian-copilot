@@ -218,6 +218,26 @@ describe("sanitizeSettings - legacy Miyo settings cleanup", () => {
   });
 });
 
+describe("sanitizeSettings - local web search provider", () => {
+  it("preserves Tavily as a valid local web search provider", () => {
+    const sanitized = sanitizeSettings({
+      ...DEFAULT_SETTINGS,
+      localWebSearchProvider: "tavily",
+    });
+
+    expect(sanitized.localWebSearchProvider).toBe("tavily");
+  });
+
+  it("falls back to the default local web search provider when provider is invalid", () => {
+    const sanitized = sanitizeSettings({
+      ...DEFAULT_SETTINGS,
+      localWebSearchProvider: "invalid-provider" as any,
+    });
+
+    expect(sanitized.localWebSearchProvider).toBe(DEFAULT_SETTINGS.localWebSearchProvider);
+  });
+});
+
 describe("getSystemPrompt", () => {
   beforeEach(() => {
     jest.clearAllMocks();
